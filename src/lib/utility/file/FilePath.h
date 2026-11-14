@@ -27,10 +27,11 @@ public:
 	boost::filesystem::path getPath() const;
 
 	bool empty() const;
-	bool exists() const;
+	bool exists() const noexcept;
 	bool recheckExists() const;
 	bool isDirectory() const;
 	bool isAbsolute() const;
+	bool isValid() const;
 
 	FilePath getParentDirectory() const;
 
@@ -51,8 +52,6 @@ public:
 
 	std::string str() const;
 	std::wstring wstr() const;
-	std::string getBackslashedString() const;
-	std::wstring getBackslashedWString() const;
 	std::wstring fileName() const;
 
 	std::wstring extension() const;

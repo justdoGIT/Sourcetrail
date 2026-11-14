@@ -11,6 +11,28 @@
 #include "utilityQt.h"
 #include "utilityString.h"
 
+void QtListWidget::mouseDoubleClickEvent(QMouseEvent* event)
+{
+	QModelIndex index;
+	emit doubleClicked(index);
+}
+
+void QtListWidget::wheelEvent(QWheelEvent* event)
+{
+	QScrollBar* bar = verticalScrollBar();
+	bool down = event->angleDelta().y() < 0;
+
+	if (bar->minimum() == bar->maximum() || (down && bar->value() == bar->maximum()) ||
+		(!down && bar->value() == bar->minimum()))
+	{
+		event->ignore();
+	}
+	else
+	{
+		QListWidget::wheelEvent(event);
+	}
+}
+
 QtListBox::QtListBox(QWidget* parent, const QString& listName): QFrame(parent), m_listName(listName)
 {
 	QBoxLayout* layout = new QVBoxLayout();
@@ -19,35 +41,35 @@ QtListBox::QtListBox(QWidget* parent, const QString& listName): QFrame(parent), 
 	layout->setAlignment(Qt::AlignTop);
 
 	m_list = new QtListWidget(this);
-	m_list->setObjectName("list");
+	m_list->setObjectName(QStringLiteral("list"));
 	m_list->setAttribute(Qt::WA_MacShowFocusRect, 0);
 	connect(m_list, &QListWidget::doubleClicked, this, &QtListBox::doubleClicked);
 
 	setStyleSheet(
-		utility::getStyleSheet(ResourcePaths::getGuiPath().concatenate(L"window/listbox.css")).c_str());
+		utility::getStyleSheet(ResourcePaths::getGuiDirectoryPath().concatenate(L"window/listbox.css")).c_str());
 	layout->addWidget(m_list, 5);
 
 	QWidget* buttonContainer = new QWidget(this);
-	buttonContainer->setObjectName("bar");
+	buttonContainer->setObjectName(QStringLiteral("bar"));
 
 	QHBoxLayout* barLayout = new QHBoxLayout();
 	barLayout->setContentsMargins(8, 4, 8, 2);
 	barLayout->setSpacing(0);
 
 	m_addButton = new QtIconButton(
-		ResourcePaths::getGuiPath().concatenate(L"window/plus.png"),
-		ResourcePaths::getGuiPath().concatenate(L"window/plus_hover.png"));
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"window/plus.png"),
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"window/plus_hover.png"));
 	m_addButton->setIconSize(QSize(16, 16));
-	m_addButton->setObjectName("plusButton");
-	m_addButton->setToolTip("add line");
+	m_addButton->setObjectName(QStringLiteral("plusButton"));
+	m_addButton->setToolTip(QStringLiteral("add line"));
 	barLayout->addWidget(m_addButton);
 
 	m_removeButton = new QtIconButton(
-		ResourcePaths::getGuiPath().concatenate(L"window/minus.png"),
-		ResourcePaths::getGuiPath().concatenate(L"window/minus_hover.png"));
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"window/minus.png"),
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"window/minus_hover.png"));
 	m_removeButton->setIconSize(QSize(16, 16));
-	m_removeButton->setObjectName("minusButton");
-	m_removeButton->setToolTip("remove line");
+	m_removeButton->setObjectName(QStringLiteral("minusButton"));
+	m_removeButton->setToolTip(QStringLiteral("remove line"));
 	barLayout->addWidget(m_removeButton);
 
 	barLayout->addStretch();
@@ -56,10 +78,10 @@ QtListBox::QtListBox(QWidget* parent, const QString& listName): QFrame(parent), 
 	barLayout->addLayout(m_innerBarLayout);
 
 	QPushButton* editButton = new QtIconButton(
-		ResourcePaths::getGuiPath().concatenate(L"code_view/images/edit.png"), FilePath());
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"code_view/images/edit.png"), FilePath());
 	editButton->setIconSize(QSize(16, 16));
-	editButton->setObjectName("editButton");
-	editButton->setToolTip("edit plain text");
+	editButton->setObjectName(QStringLiteral("editButton"));
+	editButton->setToolTip(QStringLiteral("edit plain text"));
 	barLayout->addWidget(editButton);
 
 	buttonContainer->setLayout(barLayout);
@@ -85,29 +107,6 @@ void QtListBox::addWidgetToBar(QWidget* widget)
 	{
 		m_innerBarLayout->addWidget(widget);
 	}
-}
-
-bool QtListBox::event(QEvent* event)
-{
-	// Prevent nested ScrollAreas from scrolling at the same time;
-	if (event->type() == QEvent::Wheel)
-	{
-		QRect rect = m_list->viewport()->rect();
-		QPoint pos = m_list->mapFromGlobal(dynamic_cast<QWheelEvent*>(event)->globalPos());
-		QScrollBar* bar = m_list->verticalScrollBar();
-
-		if (bar->minimum() != bar->maximum() && rect.contains(pos))
-		{
-			bool down = dynamic_cast<QWheelEvent*>(event)->angleDelta().y() < 0;
-
-			if ((down && bar->value() != bar->maximum()) || (!down && bar->value() != bar->minimum()))
-			{
-				return true;
-			}
-		}
-	}
-
-	return QFrame::event(event);
 }
 
 QtListBoxItem* QtListBox::addListBoxItemWithText(const QString& text)

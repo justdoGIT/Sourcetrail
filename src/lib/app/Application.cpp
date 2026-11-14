@@ -4,6 +4,7 @@
 #include "ApplicationSettings.h"
 #include "ColorScheme.h"
 #include "DialogView.h"
+#include "FileLogger.h"
 #include "FileSystem.h"
 #include "GraphViewStyle.h"
 #include "IDECommunicationController.h"
@@ -22,7 +23,6 @@
 #include "TabId.h"
 #include "TaskManager.h"
 #include "TaskScheduler.h"
-#include "UpdateChecker.h"
 #include "UserPaths.h"
 #include "Version.h"
 #include "ViewFactory.h"
@@ -30,6 +30,8 @@
 #include "tracing.h"
 #include "utilityString.h"
 #include "utilityUuid.h"
+
+#include "CppSQLite3.h"
 
 std::shared_ptr<Application> Application::s_instance;
 std::string Application::s_uuid;
@@ -73,8 +75,6 @@ void Application::createInstance(
 		s_instance->m_ideCommunicationController = networkFactory->createIDECommunicationController(
 			s_instance->m_storageCache.get());
 		s_instance->m_ideCommunicationController->startListening();
-
-		s_instance->m_updateChecker = networkFactory->createUpdateChecker();
 	}
 
 	s_instance->startMessagingAndScheduling();
@@ -106,12 +106,19 @@ std::string Application::getUUID()
 
 void Application::loadSettings()
 {
-	MessageStatus(L"Load settings: " + UserPaths::getAppSettingsPath().wstr()).dispatch();
+	MessageStatus(L"Load settings: " + UserPaths::getAppSettingsFilePath().wstr()).dispatch();
 
 	std::shared_ptr<ApplicationSettings> settings = ApplicationSettings::getInstance();
-	settings->load(UserPaths::getAppSettingsPath());
+	settings->load(UserPaths::getAppSettingsFilePath());
 
 	LogManager::getInstance()->setLoggingEnabled(settings->getLoggingEnabled());
+	Logger* logger = LogManager::getInstance()->getLoggerByType("FileLogger");
+	if (logger)
+	{
+		const auto fileLogger = dynamic_cast<FileLogger*>(logger);
+		fileLogger->setLogDirectory(settings->getLogDirectoryPath());
+		fileLogger->setFileName(FileLogger::generateDatedFileName(L"log"));
+	}
 
 	loadStyle(settings->getColorSchemePath());
 }
@@ -255,7 +262,7 @@ void Application::handleMessage(MessageLoadProject* message)
 		if (message->settingsChanged && m_hasGUI)
 		{
 			m_project->setStateOutdated();
-			refreshProject(REFRESH_ALL_FILES);
+			refreshProject(REFRESH_ALL_FILES, message->shallowIndexingRequested);
 		}
 	}
 	else
@@ -298,25 +305,31 @@ void Application::handleMessage(MessageLoadProject* message)
 		}
 		catch (std::exception& e)
 		{
-			LOG_ERROR_STREAM(<< "Failed to load project, exception thrown: " << e.what());
-			MessageStatus(
-				L"Failed to load project, exception was thrown: " + projectSettingsFilePath.wstr(),
-				true)
-				.dispatch();
+			const std::wstring message = L"Failed to load project at \"" +
+				projectSettingsFilePath.wstr() + L"\" with exception: " +
+				utility::decodeFromUtf8(e.what());
+			LOG_ERROR(message);
+			MessageStatus(message, true).dispatch();
+		}
+		catch (CppSQLite3Exception& e)
+		{
+			const std::wstring message = L"Failed to load project at \"" +
+				projectSettingsFilePath.wstr() + L"\" with sqlite exception: " +
+				utility::decodeFromUtf8(e.errorMessage());
+			LOG_ERROR(message);
+			MessageStatus(message, true).dispatch();
 		}
 		catch (...)
 		{
-			LOG_ERROR_STREAM(<< "Failed to load project, unknown exception thrown.");
-			MessageStatus(
-				L"Failed to load project, unknown exception was thrown: " +
-					projectSettingsFilePath.wstr(),
-				true)
-				.dispatch();
+			const std::wstring message = L"Failed to load project at \"" +
+				projectSettingsFilePath.wstr() + L"\" with unknown exception.";
+			LOG_ERROR(message);
+			MessageStatus(message, true).dispatch();
 		}
 
 		if (message->refreshMode != REFRESH_NONE)
 		{
-			refreshProject(message->refreshMode);
+			refreshProject(message->refreshMode, message->shallowIndexingRequested);
 		}
 	}
 }
@@ -325,7 +338,7 @@ void Application::handleMessage(MessageRefresh* message)
 {
 	TRACE("app refresh");
 
-	refreshProject(message->all ? REFRESH_ALL_FILES : REFRESH_UPDATED_FILES);
+	refreshProject(message->all ? REFRESH_ALL_FILES : REFRESH_UPDATED_FILES, false);
 }
 
 void Application::handleMessage(MessageRefreshUI* message)
@@ -342,6 +355,8 @@ void Application::handleMessage(MessageRefreshUI* message)
 		}
 
 		m_mainView->refreshViews();
+
+		m_mainView->refreshUIState(message->isAfterIndexing);
 	}
 }
 
@@ -351,19 +366,6 @@ void Application::handleMessage(MessageSwitchColorScheme* message)
 
 	loadStyle(message->colorSchemePath);
 	MessageRefreshUI().noStyleReload().dispatch();
-}
-
-void Application::handleMessage(MessageWindowFocus* message)
-{
-	if (!message->focusIn)
-	{
-		return;
-	}
-
-	if (m_project && ApplicationSettings::getInstance()->getAutomaticUpdateCheck())
-	{
-		m_updateChecker->checkUpdate();
-	}
 }
 
 void Application::startMessagingAndScheduling()
@@ -391,13 +393,6 @@ void Application::loadWindow(bool showStartWindow)
 	{
 		ApplicationSettings* appSettings = ApplicationSettings::getInstance().get();
 
-		// delay first update check by 24 hours at first launch
-		if (!appSettings->getLastUpdateCheck().isValid())
-		{
-			appSettings->setLastUpdateCheck(TimeStamp::now());
-			appSettings->save();
-		}
-
 		updateTitle();
 
 		m_mainView->loadWindow(showStartWindow);
@@ -409,11 +404,12 @@ void Application::loadWindow(bool showStartWindow)
 	}
 }
 
-void Application::refreshProject(RefreshMode refreshMode)
+void Application::refreshProject(RefreshMode refreshMode, bool shallowIndexingRequested)
 {
 	if (m_project && checkSharedMemory())
 	{
-		m_project->refresh(refreshMode, getDialogView(DialogView::UseCase::INDEXING));
+		m_project->refresh(
+			getDialogView(DialogView::UseCase::INDEXING), refreshMode, shallowIndexingRequested);
 
 		if (!m_hasGUI && !m_project->isIndexing())
 		{
@@ -445,7 +441,7 @@ void Application::updateRecentProjects(const FilePath& projectSettingsFilePath)
 		}
 
 		appSettings->setRecentProjects(recentProjects);
-		appSettings->save(UserPaths::getAppSettingsPath());
+		appSettings->save(UserPaths::getAppSettingsFilePath());
 
 		m_mainView->updateRecentProjectMenu();
 	}
@@ -514,8 +510,7 @@ bool Application::checkSharedMemory()
 			L"There was an error accessing shared memory on your computer: " + error +
 			L"\n\n"
 			"Project indexing is not possible. Please restart your computer or try running "
-			"Sourcetrail as admin. If the "
-			"issue persists contact mail@sourcetrail.com");
+			"Sourcetrail as admin.");
 		return false;
 	}
 

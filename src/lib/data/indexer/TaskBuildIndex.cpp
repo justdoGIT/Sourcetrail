@@ -13,13 +13,6 @@
 #include "UserPaths.h"
 #include "utilityApp.h"
 
-
-#if _WIN32
-const std::wstring TaskBuildIndex::s_processName(L"sourcetrail_indexer.exe");
-#else
-const std::wstring TaskBuildIndex::s_processName(L"sourcetrail_indexer");
-#endif
-
 TaskBuildIndex::TaskBuildIndex(
 	size_t processCount,
 	std::shared_ptr<StorageProvider> storageProvider,
@@ -185,7 +178,7 @@ void TaskBuildIndex::handleMessage(MessageIndexingInterrupted* message)
 
 void TaskBuildIndex::runIndexerProcess(int processId, const std::wstring& logFilePath)
 {
-	const FilePath indexerProcessPath = AppPath::getAppPath().concatenate(s_processName);
+	const FilePath indexerProcessPath = AppPath::getCxxIndexerFilePath();
 	if (!indexerProcessPath.exists())
 	{
 		m_interrupted = true;
@@ -195,22 +188,23 @@ void TaskBuildIndex::runIndexerProcess(int processId, const std::wstring& logFil
 		return;
 	}
 
-	const std::wstring commandPath = L"\"" + indexerProcessPath.wstr() + L"\"";
 	std::vector<std::wstring> commandArguments;
 	commandArguments.push_back(std::to_wstring(processId));
 	commandArguments.push_back(utility::decodeFromUtf8(m_appUUID));
-	commandArguments.push_back(L"\"" + AppPath::getAppPath().getAbsolute().wstr() + L"\"");
-	commandArguments.push_back(L"\"" + UserPaths::getUserDataPath().getAbsolute().wstr() + L"\"");
+	commandArguments.push_back(AppPath::getSharedDataDirectoryPath().getAbsolute().wstr());
+	commandArguments.push_back(UserPaths::getUserDataDirectoryPath().getAbsolute().wstr());
 
 	if (!logFilePath.empty())
 	{
-		commandArguments.push_back(L"\"" + logFilePath + L"\"");
+		commandArguments.push_back(logFilePath);
 	}
 
 	int result = 1;
 	while ((!m_indexerCommandQueueStopped || result != 0) && !m_interrupted)
 	{
-		result = utility::executeProcessAndGetExitCode(commandPath, commandArguments, FilePath(), -1);
+		result = utility::executeProcess(
+					 indexerProcessPath.wstr(), commandArguments, FilePath(), false, -1)
+					 .exitCode;
 
 		LOG_INFO_STREAM(<< "Indexer process " << processId << " returned with " + std::to_string(result));
 	}
@@ -268,7 +262,7 @@ bool TaskBuildIndex::fetchIntermediateStorages(std::shared_ptr<Blackboard> black
 		std::shared_ptr<InterprocessIntermediateStorageManager> storageManager =
 			m_interprocessIntermediateStorageManagers[finishedProcessId - 1];
 
-		int storageCount = storageManager->getIntermediateStorageCount();
+		const size_t storageCount = storageManager->getIntermediateStorageCount();
 		if (!storageCount)
 		{
 			break;

@@ -17,23 +17,23 @@
 #include "QtContextMenu.h"
 
 QtCodeFileTitleButton::QtCodeFileTitleButton(QWidget* parent)
-	: QtSelfRefreshIconButton("", FilePath(), "code/file/title", parent)
+	: QtSelfRefreshIconButton(QLatin1String(""), FilePath(), "code/file/title", parent)
 	, m_isComplete(true)
 	, m_isIndexed(true)
 {
-	setObjectName("title_button");
+	setObjectName(QStringLiteral("title_button"));
 	minimumSizeHint();	  // force font loading
 
-	setFixedHeight(std::max(fontMetrics().height() * 1.2, 28.0));
+	setFixedHeight(static_cast<int>(std::max(fontMetrics().height() * 1.2, 28.0)));
 	setSizePolicy(sizePolicy().horizontalPolicy(), QSizePolicy::Fixed);
 
 	setIconSize(QSize(16, 16));
 
 	connect(this, &QtCodeFileTitleButton::clicked, this, &QtCodeFileTitleButton::clickedTitle);
 
-	m_openInTabAction = new QAction("Open in New Tab", this);
-	m_openInTabAction->setStatusTip("Opens the file in a new tab");
-	m_openInTabAction->setToolTip("Opens the file in a new tab");
+	m_openInTabAction = new QAction(QStringLiteral("Open in New Tab"), this);
+	m_openInTabAction->setStatusTip(QStringLiteral("Opens the file in a new tab"));
+	m_openInTabAction->setToolTip(QStringLiteral("Opens the file in a new tab"));
 	m_openInTabAction->setEnabled(false);
 	connect(m_openInTabAction, &QAction::triggered, this, &QtCodeFileTitleButton::openInTab);
 }
@@ -65,7 +65,7 @@ void QtCodeFileTitleButton::setProject(const std::wstring& name)
 	m_filePath = FilePath();
 
 	setText(QString::fromStdWString(name));
-	setToolTip("edit project");
+	setToolTip(QStringLiteral("edit project"));
 
 	updateIcon();
 }
@@ -245,16 +245,16 @@ void QtCodeFileTitleButton::updateIcon()
 {
 	if (m_filePath.empty())
 	{
-		setIconPath(ResourcePaths::getGuiPath().concatenate(L"code_view/images/edit.png"));
+		setIconPath(ResourcePaths::getGuiDirectoryPath().concatenate(L"code_view/images/edit.png"));
 	}
 	else if (!m_isComplete)
 	{
 		setIconPath(
-			ResourcePaths::getGuiPath().concatenate(L"graph_view/images/file_incomplete.png"));
+			ResourcePaths::getGuiDirectoryPath().concatenate(L"graph_view/images/file_incomplete.png"));
 	}
 	else
 	{
-		setIconPath(ResourcePaths::getGuiPath().concatenate(L"code_view/images/file.png"));
+		setIconPath(ResourcePaths::getGuiDirectoryPath().concatenate(L"code_view/images/file.png"));
 	}
 }
 
@@ -262,7 +262,7 @@ void QtCodeFileTitleButton::updateHatching()
 {
 	if (!m_isIndexed)
 	{
-		FilePath hatchingFilePath = ResourcePaths::getGuiPath().concatenate(
+		FilePath hatchingFilePath = ResourcePaths::getGuiDirectoryPath().concatenate(
 			L"code_view/images/pattern_" +
 			utility::decodeFromUtf8(
 				ColorScheme::getInstance()->getColor("code/file/title/hatching")) +
@@ -273,6 +273,6 @@ void QtCodeFileTitleButton::updateHatching()
 	}
 	else
 	{
-		setStyleSheet("");
+		setStyleSheet(QLatin1String(""));
 	}
 }

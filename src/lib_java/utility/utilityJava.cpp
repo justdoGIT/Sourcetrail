@@ -18,24 +18,24 @@ namespace utility
 std::vector<std::wstring> getRequiredJarNames()
 {
 	return {
-		L"gradle-tooling-api-4.2.jar",
+		L"gradle-tooling-api-6.7.1.jar",
 		L"java-indexer.jar",
-		L"org.eclipse.core.commands-3.9.200.jar",
-		L"org.eclipse.core.contenttype-3.7.200.jar",
-		L"org.eclipse.core.expressions-3.6.200.jar",
-		L"org.eclipse.core.filesystem-1.7.200.jar",
-		L"org.eclipse.core.jobs-3.10.200.jar",
-		L"org.eclipse.core.resources-3.13.200.jar",
-		L"org.eclipse.core.runtime-3.15.100.jar",
-		L"org.eclipse.equinox.app-1.4.0.jar",
-		L"org.eclipse.equinox.common-3.10.200.jar",
-		L"org.eclipse.equinox.preferences-3.7.200.jar",
-		L"org.eclipse.equinox.registry-3.8.200.jar",
-		L"org.eclipse.jdt.core-3.13.102.jar",
-		L"org.eclipse.osgi-3.13.200.jar",
-		L"org.eclipse.text-3.8.0.jar",
-		L"slf4j-api-1.7.10.jar",
-		L"slf4j-simple-1.7.10.jar"};
+		L"org.eclipse.core.commands-3.9.800.jar",
+		L"org.eclipse.core.contenttype-3.7.800.jar",
+		L"org.eclipse.core.expressions-3.7.0.jar",
+		L"org.eclipse.core.filesystem-1.7.700.jar",
+		L"org.eclipse.core.jobs-3.10.1000.jar",
+		L"org.eclipse.core.resources-3.13.900.jar",
+		L"org.eclipse.core.runtime-3.20.0.jar",
+		L"org.eclipse.equinox.app-1.5.0.jar",
+		L"org.eclipse.equinox.common-3.14.0.jar",
+		L"org.eclipse.equinox.preferences-3.8.100.jar",
+		L"org.eclipse.equinox.registry-3.10.0.jar",
+		L"org.eclipse.jdt.core-3.24.0.jar",
+		L"org.eclipse.osgi-3.16.100.jar",
+		L"org.eclipse.text-3.10.400.jar",
+		L"slf4j-api-1.7.28.jar",
+		L"slf4j-simple-1.7.30.jar"};
 }
 
 std::string prepareJavaEnvironment()
@@ -59,7 +59,8 @@ std::string prepareJavaEnvironment()
 				{
 					classPath += separator;
 				}
-				classPath += ResourcePaths::getJavaPath().concatenate(L"lib/" + jarNames[i]).str();
+				classPath +=
+					ResourcePaths::getJavaDirectoryPath().concatenate(L"lib/" + jarNames[i]).str();
 			}
 		}
 
@@ -82,7 +83,7 @@ bool prepareJavaEnvironmentAndDisplayOccurringErrors()
 	if (!JavaEnvironmentFactory::getInstance())
 	{
 		std::wstring dialogMessage =
-			L"Sourcetrail was unable to locate Java on this machine.\n"
+			L"Sourcetrail was unable to initialize Java environment on this machine.\n"
 			"Please make sure to provide the correct Java Path in the preferences.";
 
 		if (!errorString.empty())
@@ -188,7 +189,10 @@ std::vector<FilePath> getClassPath(
 
 void setJavaHomeVariableIfNotExists()
 {
+#pragma warning(push)
+#pragma warning(disable : 4996)
 	if (getenv("JAVA_HOME") == nullptr)
+#pragma warning(pop)
 	{
 		const FilePath javaPath = ApplicationSettings::getInstance()->getJavaPath();
 		const FilePath javaHomePath =
@@ -197,8 +201,10 @@ void setJavaHomeVariableIfNotExists()
 		LOG_WARNING(
 			"Environment variable \"JAVA_HOME\" not found on system. Setting value to \"" +
 			javaHomePath.str() + "\" for this process.");
-
+#pragma warning(push)
+#pragma warning(disable : 4996)
 		putenv(const_cast<char*>(("JAVA_HOME=" + javaHomePath.str()).c_str()));
+#pragma warning(pop)
 	}
 }
 }	 // namespace utility

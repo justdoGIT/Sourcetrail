@@ -16,7 +16,7 @@
 #include "utility.h"
 #include "utilityString.h"
 
-const std::wstring BookmarkController::s_edgeSeperatorToken = L" => ";
+const std::wstring BookmarkController::s_edgeSeparatorToken = L" => ";
 const std::wstring BookmarkController::s_defaultCategoryName = L"default";
 
 BookmarkController::BookmarkController(StorageAccess* storageAccess)
@@ -209,10 +209,10 @@ void BookmarkController::activateBookmark(const std::shared_ptr<Bookmark> bookma
 			else
 			{
 				MessageActivateEdge activateEdge(
-					0, Edge::EdgeType::EDGE_AGGREGATION, sourceName, targetName);
-				for (const Id aggregatedEdgeId: edgeBookmark->getEdgeIds())
+					0, Edge::EdgeType::EDGE_BUNDLED_EDGES, sourceName, targetName);
+				for (const Id bundledEdgeId: edgeBookmark->getEdgeIds())
 				{
-					activateEdge.aggregationIds.push_back(aggregatedEdgeId);
+					activateEdge.bundledEdgesIds.push_back(bundledEdgeId);
 				}
 				activateEdge.dispatch();
 			}
@@ -318,7 +318,7 @@ void BookmarkController::handleMessage(MessageActivateTokens* message)
 	Id tabId = message->getSchedulerId();
 	m_activeEdgeIds[tabId].clear();
 
-	if (message->isEdge || message->isAggregation)
+	if (message->isEdge || message->isBundledEdges)
 	{
 		m_activeEdgeIds[tabId] = message->tokenIds;
 
@@ -509,7 +509,7 @@ std::vector<std::wstring> BookmarkController::getActiveEdgeDisplayNames() const
 		const StorageEdge activeEdge = m_storageAccess->getEdgeById(activeEdgeId);
 		const std::wstring sourceDisplayName = getNodeDisplayName(activeEdge.sourceNodeId);
 		const std::wstring targetDisplayName = getNodeDisplayName(activeEdge.targetNodeId);
-		activeEdgeDisplayNames.push_back(sourceDisplayName + s_edgeSeperatorToken + targetDisplayName);
+		activeEdgeDisplayNames.push_back(sourceDisplayName + s_edgeSeparatorToken + targetDisplayName);
 	}
 	return activeEdgeDisplayNames;
 }

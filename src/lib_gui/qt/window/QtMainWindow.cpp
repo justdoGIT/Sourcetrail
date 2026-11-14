@@ -25,6 +25,7 @@
 #include "MessageCustomTrailShow.h"
 #include "MessageErrorsHelpMessage.h"
 #include "MessageFind.h"
+#include "MessageFocusView.h"
 #include "MessageHistoryRedo.h"
 #include "MessageHistoryUndo.h"
 #include "MessageIndexingShowDialog.h"
@@ -32,6 +33,7 @@
 #include "MessageRefresh.h"
 #include "MessageRefreshUI.h"
 #include "MessageResetZoom.h"
+#include "MessageSaveAsImage.h"
 #include "MessageTabClose.h"
 #include "MessageTabOpen.h"
 #include "MessageTabSelect.h"
@@ -115,12 +117,12 @@ QtMainWindow::QtMainWindow()
 	, m_showDockWidgetTitleBars(true)
 	, m_windowStack(this)
 {
-	setObjectName("QtMainWindow");
+	setObjectName(QStringLiteral("QtMainWindow"));
 	setCentralWidget(nullptr);
 	setDockNestingEnabled(true);
 
 	setWindowIcon(QIcon(QString::fromStdWString(
-		ResourcePaths::getGuiPath().concatenate(L"icon/logo_1024_1024.png").wstr())));
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"icon/logo_1024_1024.png").wstr())));
 	setWindowFlags(Qt::Widget);
 
 	QApplication* app = dynamic_cast<QApplication*>(QCoreApplication::instance());
@@ -131,13 +133,10 @@ QtMainWindow::QtMainWindow()
 	if (utility::getOsType() != OS_MAC)
 	{
 		// can only be done once, because resetting the style on the QCoreApplication causes crash
-		app->setStyleSheet(
-			utility::getStyleSheet(ResourcePaths::getGuiPath().concatenate(L"main/scrollbar.css"))
-				.c_str());
+		app->setStyleSheet(utility::getStyleSheet(ResourcePaths::getGuiDirectoryPath().concatenate(
+													  L"main/scrollbar.css"))
+							   .c_str());
 	}
-
-	m_recentProjectAction =
-		new QAction*[ApplicationSettings::getInstance()->getMaxRecentProjectsCount()];
 
 	setupProjectMenu();
 	setupEditMenu();
@@ -147,17 +146,12 @@ QtMainWindow::QtMainWindow()
 	setupHelpMenu();
 
 	// Need to call loadLayout here for right DockWidget size on Linux
-	// Seconde call is in Application.cpp
+	// Second call is in Application.cpp
 	loadLayout();
 }
 
 QtMainWindow::~QtMainWindow()
 {
-	if (m_recentProjectAction)
-	{
-		delete[] m_recentProjectAction;
-	}
-
 	for (DockWidget& dockWidget: m_dockWidgets)
 	{
 		dockWidget.toggle->clear();
@@ -167,13 +161,13 @@ QtMainWindow::~QtMainWindow()
 void QtMainWindow::addView(View* view)
 {
 	const QString name = QString::fromStdString(view->getName());
-	if (name == "Tabs")
+	if (name == QLatin1String("Tabs"))
 	{
 		QToolBar* toolBar = new QToolBar();
 		toolBar->setObjectName("Tool" + name);
 		toolBar->setMovable(false);
 		toolBar->setFloatable(false);
-		toolBar->setStyleSheet("* { margin: 0; }");
+		toolBar->setStyleSheet(QStringLiteral("* { margin: 0; }"));
 		toolBar->addWidget(QtViewWidgetWrapper::getWidgetOfView(view));
 		addToolBar(toolBar);
 		return;
@@ -189,7 +183,7 @@ void QtMainWindow::addView(View* view)
 	layout->addWidget(QtViewWidgetWrapper::getWidgetOfView(view));
 
 	// Disable un-intended vertical growth of search widget
-	if (name == "Search")
+	if (name == QLatin1String("Search"))
 	{
 		dock->setSizePolicy(dock->sizePolicy().horizontalPolicy(), QSizePolicy::Fixed);
 	}
@@ -222,7 +216,7 @@ void QtMainWindow::addView(View* view)
 void QtMainWindow::overrideView(View* view)
 {
 	const QString name = QString::fromStdString(view->getName());
-	if (name == "Tabs")
+	if (name == QLatin1String("Tabs"))
 	{
 		return;
 	}
@@ -297,16 +291,16 @@ View* QtMainWindow::findFloatingView(const std::string& name) const
 void QtMainWindow::loadLayout()
 {
 	QSettings settings(
-		QString::fromStdWString(UserPaths::getWindowSettingsPath().wstr()), QSettings::IniFormat);
+		QString::fromStdWString(UserPaths::getWindowSettingsFilePath().wstr()), QSettings::IniFormat);
 
-	settings.beginGroup("MainWindow");
-	resize(settings.value("size", QSize(600, 400)).toSize());
-	move(settings.value("position", QPoint(200, 200)).toPoint());
-	if (settings.value("maximized", false).toBool())
+	settings.beginGroup(QStringLiteral("MainWindow"));
+	resize(settings.value(QStringLiteral("size"), QSize(600, 400)).toSize());
+	move(settings.value(QStringLiteral("position"), QPoint(200, 200)).toPoint());
+	if (settings.value(QStringLiteral("maximized"), false).toBool())
 	{
 		showMaximized();
 	}
-	setShowDockWidgetTitleBars(settings.value("showTitleBars", true).toBool());
+	setShowDockWidgetTitleBars(settings.value(QStringLiteral("showTitleBars"), true).toBool());
 	settings.endGroup();
 	loadDockWidgetLayout();
 }
@@ -314,8 +308,8 @@ void QtMainWindow::loadLayout()
 void QtMainWindow::loadDockWidgetLayout()
 {
 	QSettings settings(
-		QString::fromStdWString(UserPaths::getWindowSettingsPath().wstr()), QSettings::IniFormat);
-	this->restoreState(settings.value("DOCK_LOCATIONS").toByteArray());
+		QString::fromStdWString(UserPaths::getWindowSettingsFilePath().wstr()), QSettings::IniFormat);
+	this->restoreState(settings.value(QStringLiteral("DOCK_LOCATIONS")).toByteArray());
 
 	for (DockWidget dock: m_dockWidgets)
 	{
@@ -334,19 +328,19 @@ void QtMainWindow::loadWindow(bool showStartWindow)
 void QtMainWindow::saveLayout()
 {
 	QSettings settings(
-		QString::fromStdWString(UserPaths::getWindowSettingsPath().wstr()), QSettings::IniFormat);
+		QString::fromStdWString(UserPaths::getWindowSettingsFilePath().wstr()), QSettings::IniFormat);
 
-	settings.beginGroup("MainWindow");
-	settings.setValue("maximized", isMaximized());
+	settings.beginGroup(QStringLiteral("MainWindow"));
+	settings.setValue(QStringLiteral("maximized"), isMaximized());
 	if (!isMaximized())
 	{
-		settings.setValue("size", size());
-		settings.setValue("position", pos());
+		settings.setValue(QStringLiteral("size"), size());
+		settings.setValue(QStringLiteral("position"), pos());
 	}
-	settings.setValue("showTitleBars", m_showDockWidgetTitleBars);
+	settings.setValue(QStringLiteral("showTitleBars"), m_showDockWidgetTitleBars);
 	settings.endGroup();
 
-	settings.setValue("DOCK_LOCATIONS", this->saveState());
+	settings.setValue(QStringLiteral("DOCK_LOCATIONS"), this->saveState());
 }
 
 void QtMainWindow::updateHistoryMenu(std::shared_ptr<MessageBase> message)
@@ -412,7 +406,8 @@ void QtMainWindow::setContentEnabled(bool enabled)
 void QtMainWindow::refreshStyle()
 {
 	setStyleSheet(
-		utility::getStyleSheet(ResourcePaths::getGuiPath().concatenate(L"main/main.css")).c_str());
+		utility::getStyleSheet(ResourcePaths::getGuiDirectoryPath().concatenate(L"main/main.css"))
+			.c_str());
 
 	QFont tooltipFont = QToolTip::font();
 	tooltipFont.setPixelSize(ApplicationSettings::getInstance()->getFontSize());
@@ -469,6 +464,10 @@ void QtMainWindow::keyPressEvent(QKeyEvent* event)
 	case Qt::Key_Space:
 		PRINT_TRACES();
 		break;
+
+	case Qt::Key_Tab:
+		MessageFocusView(MessageFocusView::ViewType::TOGGLE).dispatch();
+		break;
 	}
 }
 
@@ -490,6 +489,12 @@ void QtMainWindow::resizeEvent(QResizeEvent* event)
 	QMainWindow::resizeEvent(event);
 }
 
+bool QtMainWindow::focusNextPrevChild(bool next)
+{
+	// makes tab key available in key press event
+	return false;
+}
+
 void QtMainWindow::about()
 {
 	QtAbout* aboutWindow = createWindow<QtAbout>();
@@ -504,7 +509,7 @@ void QtMainWindow::openSettings()
 
 void QtMainWindow::showDocumentation()
 {
-	QDesktopServices::openUrl(QUrl("https://sourcetrail.com/documentation/"));
+	QDesktopServices::openUrl(QUrl(QString::fromStdString(utility::getDocumentationLink())));
 }
 
 void QtMainWindow::showKeyboardShortcuts()
@@ -520,13 +525,14 @@ void QtMainWindow::showErrorHelpMessage()
 
 void QtMainWindow::showChangelog()
 {
-	QDesktopServices::openUrl(
-		QUrl("https://github.com/CoatiSoftware/Sourcetrail/blob/master/CHANGELOG.md"));
+	QDesktopServices::openUrl(QUrl(
+		QStringLiteral("https://github.com/CoatiSoftware/Sourcetrail/blob/master/CHANGELOG.md")));
 }
 
 void QtMainWindow::showBugtracker()
 {
-	QDesktopServices::openUrl(QUrl("https://github.com/CoatiSoftware/Sourcetrail/issues"));
+	QDesktopServices::openUrl(
+		QUrl(QStringLiteral("https://github.com/CoatiSoftware/Sourcetrail/issues")));
 }
 
 void QtMainWindow::showLicenses()
@@ -538,14 +544,16 @@ void QtMainWindow::showLicenses()
 void QtMainWindow::showDataFolder()
 {
 	QDesktopServices::openUrl(QUrl(
-		QString::fromStdWString(L"file:///" + UserPaths::getUserDataPath().makeCanonical().wstr()),
+		QString::fromStdWString(
+			L"file:///" + UserPaths::getUserDataDirectoryPath().makeCanonical().wstr()),
 		QUrl::TolerantMode));
 }
 
 void QtMainWindow::showLogFolder()
 {
 	QDesktopServices::openUrl(QUrl(
-		QString::fromStdWString(L"file:///" + UserPaths::getLogPath().makeCanonical().wstr()),
+		QString::fromStdWString(
+			L"file:///" + ApplicationSettings::getInstance()->getLogDirectoryPath().wstr()),
 		QUrl::TolerantMode));
 }
 
@@ -608,7 +616,7 @@ void QtMainWindow::newProjectFromCDB(const FilePath& filePath)
 void QtMainWindow::openProject()
 {
 	QString fileName = QtFileDialog::getOpenFileName(
-		this, tr("Open File"), FilePath(), "Sourcetrail Project Files (*.srctrlprj)");
+		this, tr("Open File"), FilePath(), QStringLiteral("Sourcetrail Project Files (*.srctrlprj)"));
 
 	if (!fileName.isEmpty())
 	{
@@ -705,6 +713,19 @@ void QtMainWindow::forceRefresh()
 	MessageRefresh().refreshAll().dispatch();
 }
 
+void QtMainWindow::saveAsImage()
+{
+	QString filePath = QtFileDialog::showSaveFileDialog(
+		this, tr("Save as Image"), FilePath(), "PNG (*.png);;JPEG (*.JPEG);;BMP Files (*.bmp)");
+	if (filePath.isNull())
+	{
+		return;
+	}
+	MessageSaveAsImage m(filePath);
+	m.setSchedulerId(TabId::currentTab());
+	m.dispatch();
+}
+
 void QtMainWindow::undo()
 {
 	MessageHistoryUndo().dispatch();
@@ -732,10 +753,10 @@ void QtMainWindow::resetZoom()
 
 void QtMainWindow::resetWindowLayout()
 {
-	FileSystem::remove(UserPaths::getWindowSettingsPath());
+	FileSystem::remove(UserPaths::getWindowSettingsFilePath());
 	FileSystem::copyFile(
-		ResourcePaths::getFallbackPath().concatenate(L"window_settings.ini"),
-		UserPaths::getWindowSettingsPath());
+		ResourcePaths::getFallbackDirectoryPath().concatenate(L"window_settings.ini"),
+		UserPaths::getWindowSettingsFilePath());
 	loadDockWidgetLayout();
 }
 
@@ -749,21 +770,24 @@ void QtMainWindow::openRecentProject()
 	}
 }
 
-void QtMainWindow::updateRecentProjectMenu()
+void QtMainWindow::updateRecentProjectsMenu()
 {
-	std::vector<FilePath> recentProjects = ApplicationSettings::getInstance()->getRecentProjects();
-	for (int i = 0; i < ApplicationSettings::getInstance()->getMaxRecentProjectsCount(); i++)
+	m_recentProjectsMenu->clear();
+
+	const std::vector<FilePath> recentProjects =
+		ApplicationSettings::getInstance()->getRecentProjects();
+	const size_t recentProjectsCount = ApplicationSettings::getInstance()->getMaxRecentProjectsCount();
+
+	for (size_t i = 0; i < recentProjects.size() && i < recentProjectsCount; ++i)
 	{
-		if ((size_t)i < recentProjects.size() && recentProjects[i].exists())
+		const FilePath& project = recentProjects[i];
+		if (project.exists())
 		{
-			FilePath project = recentProjects[i];
-			m_recentProjectAction[i]->setVisible(true);
-			m_recentProjectAction[i]->setText(QString::fromStdWString(project.fileName()));
-			m_recentProjectAction[i]->setData(QString::fromStdWString(project.wstr()));
-		}
-		else
-		{
-			m_recentProjectAction[i]->setVisible(false);
+			QAction* recentProject = new QAction(this);
+			recentProject->setText(QString::fromStdWString(project.fileName()));
+			recentProject->setData(QString::fromStdWString(project.wstr()));
+			connect(recentProject, &QAction::triggered, this, &QtMainWindow::openRecentProject);
+			m_recentProjectsMenu->addAction(recentProject);
 		}
 	}
 }
@@ -827,20 +851,9 @@ void QtMainWindow::setupProjectMenu()
 	menu->addAction(tr("&New Project..."), this, &QtMainWindow::newProject, QKeySequence::New);
 	menu->addAction(tr("&Open Project..."), this, &QtMainWindow::openProject, QKeySequence::Open);
 
-	QMenu* recentProjectMenu = new QMenu(tr("Recent Projects"));
-	menu->addMenu(recentProjectMenu);
-
-	for (int i = 0; i < ApplicationSettings::getInstance()->getMaxRecentProjectsCount(); ++i)
-	{
-		m_recentProjectAction[i] = new QAction(this);
-		m_recentProjectAction[i]->setVisible(false);
-		connect(
-			m_recentProjectAction[i], &QAction::triggered, this, &QtMainWindow::openRecentProject);
-		recentProjectMenu->addAction(m_recentProjectAction[i]);
-	}
-	updateRecentProjectMenu();
-
-	menu->addMenu(recentProjectMenu);
+	m_recentProjectsMenu = new QMenu(tr("Recent Projects"));
+	menu->addMenu(m_recentProjectsMenu);
+	updateRecentProjectsMenu();
 
 	menu->addSeparator();
 
@@ -903,22 +916,30 @@ void QtMainWindow::setupEditMenu()
 		tr("Next Local Reference"),
 		this,
 		&QtMainWindow::codeLocalReferenceNext,
-		QKeySequence(Qt::CTRL + Qt::Key_E));
+		QKeySequence(Qt::CTRL + Qt::Key_L));
 	menu->addAction(
 		tr("Previous Local Reference"),
 		this,
 		&QtMainWindow::codeLocalReferencePrevious,
-		QKeySequence(Qt::SHIFT + Qt::CTRL + Qt::Key_E));
+		QKeySequence(Qt::SHIFT + Qt::CTRL + Qt::Key_L));
 
 	menu->addSeparator();
 
 	menu->addAction(
-		tr("Custom Trail..."), this, &QtMainWindow::customTrail, QKeySequence(Qt::CTRL + Qt::Key_L));
+		tr("Custom Trail..."), this, &QtMainWindow::customTrail, QKeySequence(Qt::CTRL + Qt::Key_U));
 
 	menu->addSeparator();
 
 	menu->addAction(
-		tr("&To overview"), this, &QtMainWindow::overview, QKeySequence::MoveToStartOfDocument);
+		tr("&To overview"), this, &QtMainWindow::overview, QKeySequence(Qt::CTRL + Qt::Key_Home));
+
+	menu->addSeparator();
+
+	menu->addAction(
+		tr("&Save Graph as Image..."),
+		this,
+		&QtMainWindow::saveAsImage,
+		QKeySequence(Qt::SHIFT + Qt::CTRL + Qt::Key_S));
 
 	menu->addSeparator();
 
@@ -963,7 +984,7 @@ void QtMainWindow::setupViewMenu()
 
 	menu->addAction(tr("Show Start Window"), this, &QtMainWindow::showStartScreen);
 
-	m_showTitleBarsAction = new QAction("Show Title Bars", this);
+	m_showTitleBarsAction = new QAction(QStringLiteral("Show Title Bars"), this);
 	m_showTitleBarsAction->setCheckable(true);
 	m_showTitleBarsAction->setChecked(m_showDockWidgetTitleBars);
 	connect(
@@ -995,8 +1016,8 @@ void QtMainWindow::setupHistoryMenu()
 		m_historyMenu->clear();
 	}
 
-	m_historyMenu->addAction(tr("Back"), this, &QtMainWindow::undo, QKeySequence::Undo);
-	m_historyMenu->addAction(tr("Forward"), this, &QtMainWindow::redo, QKeySequence::Redo);
+	m_historyMenu->addAction(tr("Back"), this, &QtMainWindow::undo, QKeySequence::Back);
+	m_historyMenu->addAction(tr("Forward"), this, &QtMainWindow::redo, QKeySequence::Forward);
 
 	m_historyMenu->addSeparator();
 
@@ -1137,7 +1158,9 @@ void QtMainWindow::setShowDockWidgetTitleBars(bool showTitleBars)
 	{
 		if (showTitleBars)
 		{
-			dock.widget->setFeatures(QDockWidget::AllDockWidgetFeatures);
+			dock.widget->setFeatures(
+				QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable |
+				QDockWidget::DockWidgetFloatable);
 			dock.widget->setTitleBarWidget(nullptr);
 		}
 		else

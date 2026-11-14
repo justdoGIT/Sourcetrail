@@ -20,13 +20,13 @@ void QtTooltipView::createWidgetWrapper()
 void QtTooltipView::refreshView()
 {
 	m_onQtThread([=]() {
-		m_widget->setStyleSheet(utility::getStyleSheet(ResourcePaths::getGuiPath().concatenate(
+		m_widget->setStyleSheet(utility::getStyleSheet(ResourcePaths::getGuiDirectoryPath().concatenate(
 														   L"tooltip_view/tooltip_view.css"))
 									.c_str());
 	});
 }
 
-void QtTooltipView::showTooltip(TooltipInfo info, const View* parent)
+void QtTooltipView::showTooltip(const TooltipInfo& info, const View* parent)
 {
 	m_onQtThread([=]() {
 		if (m_widget->isHovered())

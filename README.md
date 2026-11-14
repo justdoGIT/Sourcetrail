@@ -1,16 +1,18 @@
 # Sourcetrail
 
-[Sourcetrail](https://www.sourcetrail.com/) is a free and open-source cross-platform source explorer that helps you get productive on unfamiliar source code.
+*__Important Note:__ This project was archived by the original autors and maintainers of Sourcetrail by the end of 2021. If you want to know more about this decision, read more on our [blog](https://web.archive.org/web/20211119200517/https://www.sourcetrail.com/blog/).*
 
-Links
-* [Website](https://www.sourcetrail.com/)
-* [Download](https://www.sourcetrail.com/downloads)
-* [Quick Start Guide](https://www.sourcetrail.com/documentation/#QUICKSTARTGUIDE)
-* [Documentation](https://www.sourcetrail.com/documentation)
+Sourcetrail is a free and open-source cross-platform source explorer that helps you get productive on unfamiliar source code.
+
+Windows: [![Build status](https://ci.appveyor.com/api/projects/status/0c258a2opn3loyc2/branch/master?svg=true)](https://ci.appveyor.com/project/mlangkabel/sourcetrail/branch/master)
+
+Linux: [![Build Status](https://travis-ci.org/CoatiSoftware/Sourcetrail.svg?branch=master)](https://travis-ci.org/CoatiSoftware/Sourcetrail)
+
+__Links__
+* [Download](https://github.com/CoatiSoftware/Sourcetrail/releases)
+* [Quick Start Guide](DOCUMENTATION.md#getting-started)
+* [Documentation](DOCUMENTATION.md)
 * [Changelog](CHANGELOG.md)
-* [Slack Channel](https://join.slack.com/t/sourcetrail/shared_invite/enQtNDc3MjcyOTk5MTc0LTc3NjJiMzI1NDFiOTE2NDZmOWIwMDQzZjA3N2RhOTZlOGMxYmRjOTA1ZGQ3ZDdlNjliZWQ5MDIwOWU1YWZmYzg)
-* [Mailing List](https://coati.us12.list-manage.com/subscribe/post?u=3dabab4e475b5ed577d1dcd0f&id=cf7301fc53)
-* [Patreon](https://www.patreon.com/sourcetrail)
 
 !["Sourcetrail User Interface"](docs/readme/user_interface.png "Sourcetrail User Interface")
 
@@ -21,13 +23,17 @@ Sourcetrail is:
 * supporting C, C++, Java and Python
 * offering an SDK ([SourcetrailDB](https://github.com/CoatiSoftware/SourcetrailDB)) to write custom language extensions
 
-## Support Sourcetrail via Patreon
+## Sourcetrail on Patreon
 
-The ongoing development and regular software releases are made possible entirely by the support of [these awesome patrons](SPONSORS.md)! If you'd like to join them, please consider [becoming a patron](https://www.patreon.com/sourcetrail) of Sourcetrail.
+The open-source development and regular software releases are made possible entirely by the support of [these awesome patrons](SPONSORS.md)!
 
 ## Using Sourcetrail
 
-Download the respective build for your operating system from our list of [Releases](https://www.sourcetrail.com/downloads) and install it on your machine. After that follow our [Quick Start Guide](https://www.sourcetrail.com/documentation/#QUICKSTARTGUIDE) to get to know Sourcetrail.
+To setup Sourcetrail on your machine, you can either download the respective build for your operating system from our list of [Releases](https://github.com/CoatiSoftware/Sourcetrail/releases) and install it on your machine, or use one of the following package managers:
+
+* Use the [Chocolatey package](https://chocolatey.org/packages/sourcetrail) with `choco install sourcetrail`
+
+After your installation is complete, follow our [Quick Start Guide](DOCUMENTATION.md#getting-started) to get to know Sourcetrail.
 
 ## How to Report Issues
 
@@ -42,7 +48,6 @@ Use the following template:
 * description of the problem:
 * steps to reproduce the problem:
 
-
 ### Supporting
 
 If you want to support a certain feature request or you have the same bug that another user already reported, please let us know:
@@ -51,160 +56,176 @@ If you want to support a certain feature request or you have the same bug that a
 
 ## How to Contribute
 
-Please read and follow the steps in [CONTRIBUTING.md](CONTRIBUTING.md) file.
-
+* Please read and follow the steps in [CONTRIBUTING.md](CONTRIBUTING.md) file.
+* You may want to look out for issues labeled [good first issue](https://github.com/CoatiSoftware/Sourcetrail/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) to find some initial tasks to tackle.
+* If you are looking for more information about Sourcetrail software development, please refer to our [wiki](https://github.com/CoatiSoftware/Sourcetrail/wiki).
 
 # How to Build
 
 Building Sourcetrail requires several dependencies to be in place on your machine. However, our CMake based setup allows to disable indexing support for specific languages which reduces the number of dependencies to a minimum.
 
-## Building the bare minimum
+## Building the Base Application
 
 ### Required Tools
 
-#### Git
+* __CMake v3.12 (required for Windows, Linux and MacOS)__
+    * __Reason__: Used to generate a build configuration for your build system
+    * __Download__: https://cmake.org/download
 
-This is required for generating the Sourcetrail version number. Get it from: https://git-scm.com/download.
+* __Git (required for Windows, Linux and MacOS)__
+    * __Reason__: Used for version control and to automatically generate the Sourcetrail version number from commits and tags
+    * __Download__: https://git-scm.com/download
+    * __Remarks__: Make sure `git` is added to your `PATH` environment variable before running CMake
 
-Make sure `git` is available in added to your `PATH` environment variable.
+* __Visual Studio (required for Windows)__
+    * __Reason__: Used for building Sourcetrail
+    * __Download__: https://visualstudio.microsoft.com/downloads/
 
-#### CMake v3.12
-
-This is used for generating a build configuration. Get it from: https://cmake.org/download/
-
-### Additional tools for Windows
-
-#### Visual Studio
-
-### Additional tools for Unix
-
-#### ccache
-
-This is optionally used to speed up rebuilds if found in `PATH`.
+* __ccache (optional for Linux and MacOS)__
+    * __Reason__: Used to speed up rebuilds if found in `PATH`
+    * __Download__: https://ccache.dev/download.html
 
 ### Required dependencies
 
-#### Boost 1.68
-For the __msvc__ compiler pre-built binaries can be downloaded from [sourceforge.net/projects/boost/files/boost-binaries](https://sourceforge.net/projects/boost/files/boost-binaries/)
+* __Boost 1.67__
+    * __Reason__: Used for file system access and interprocess communication
+    * __Prebuilt Download for Windows__: https://sourceforge.net/projects/boost/files/boost-binaries/
+    * __Building for Unix__:
+        ```
+        $ ./bootstrap.sh --with-libraries=filesystem,program_options,system,date_time
+        $ ./b2 --link=static --variant=release --threading=multi --runtime-link=static --cxxflags=-fPIC
+        ```
 
-For building on Unix:
-```
-$ ./bootstrap.sh --with-libraries=filesystem,program_options,system,date_time
-$ ./b2 --link=static --variant=release --threading=multi --runtime-link=static --cxxflags=-fPIC
-```
-
-#### Qt 5.12
-
-__Note__: still causes style issues on Windows, resort to Qt 5.10
-
-For the __msvc__ compiler pre-built binaries can be downloaded from [download.qt.io/official_releases/qt](http://download.qt.io/official_releases/qt/)
+* __Qt 5.12.3__
+    * __Reason__: Used for rendering the GUI and for starting additional (indexer) processes.
+    * __Prebuilt Download__: http://download.qt.io/official_releases/qt/
 
 ### Building
 
-#### For Windows / Visual Studio
-```
-$ cd Sourcetrail
-$ mkdir -p build/win64
-$ cd build/win64
-$ cmake -G "Visual Studio 15 2017 Win64" -DBOOST_ROOT=<path/to/boost_1_68_0> -DQt5_DIR=<path/to/Qt/version/platform/compiler/lib/cmake/Qt5> ../..
-```
-If you are using the gui, we recommend that you activate advanced mode. Also you may be required to add some of the defines via the "Add Entry" button.
+#### On Windows
+* To set up your build environment run:
+    ```
+    $ git clone https://github.com/CoatiSoftware/Sourcetrail.git
+    $ cd Sourcetrail
+    $ mkdir -p build/win64
+    $ cd build/win64
+    $ cmake -G "Visual Studio 15 2017 Win64" -DBOOST_ROOT=<path/to/boost_1_67_0> -DQt5_DIR=<path/to/Qt/version/platform/compiler/lib/cmake/Qt5> ../..
+    ```
+    _Hint: If you are using the CMake GUI, we recommend that you activate advanced mode. Also you may be required to add some of the defines via the "Add Entry" button._
 
-After generating the build configuration, just open the Sourcetrail.sln file that was generated by CMake and build the Sourcetrail project.
+* After generating the build configuration, just open the Sourcetrail.sln file that was generated by CMake and build the Sourcetrail project.
 
-#### For Unix
+#### On Unix
 
-```
-$ cd Sourcetrail
-$ mkdir -p build/Release
-$ cd build/Release
-$ cmake -DCMAKE_BUILD_TYPE="Release" -DBOOST_ROOT=<path/to/boost_1_68_0> -DQt5_DIR=<path/to/Qt/version/platform/compiler/lib/cmake/Qt5> ../..
-$ make Sourcetrail
-```
+* To set up your build environment run:
+    ```
+    $ cd Sourcetrail
+    $ mkdir -p build/Release
+    $ cd build/Release
+    $ cmake -DCMAKE_BUILD_TYPE="Release" -DBOOST_ROOT=<path/to/boost_1_67_0> -DQt5_DIR=<path/to/Qt/version/platform/compiler/lib/cmake/Qt5> ../..
+    ```
+* Now start the build with:
+    ```
+    $ make Sourcetrail
+    ```
 
 ### Running
 
-Run Sourcetrail from within the build directory. During execution Sourcetrail needs resources from `bin/app/data` and `bin/app/user`. Cmake creates symlinks to these directories within the build directory.
+* Run Sourcetrail from within the build directory. During execution Sourcetrail needs resources from `bin/app/data` and `bin/app/user`. CMake creates symlinks within the build directory that make these directories accessible.
 
 
 ## Enable C/C++ Language Support
 
 ### Required dependencies
 
-#### LLVM/Clang 8.0.1
-
-##### Windows
-For the __msvc__ compiler, follow [these steps](https://clang.llvm.org/get_started.html) to build the project and make sure that you run the cmake command exactly as described.
-
-##### Unix
-For Unix, follow this [installation guide](http://clang.llvm.org/docs/LibASTMatchersTutorial.html)
-
-Build with `-DLLVM_ENABLE_RTTI=ON`.
+* __LLVM/Clang 11.0.0__
+    * __Reason__: Used for running the preprocessor on the indexed source code, building and traversing an Abstract Syntax Tree and generating error messages.
+    * __Building__: Make sure to check out the correct tag: `git checkout llvmorg-11.0.0`
+    * __Building for Windows__: Follow [these steps](https://clang.llvm.org/get_started.html) to build the project. Run the cmake command exactly as described.
+    * __Building for Unix__: Follow this [installation guide](http://clang.llvm.org/docs/LibASTMatchersTutorial.html) to build the project. Make sure to build with `-DLLVM_ENABLE_RTTI=ON`.
 
 ### Building
 
-Run CMake with these additional options:
-```
--DClang_DIR=<path/to/llvm_build/lib/cmake/clang>
--DBUILD_CXX_LANGUAGE_PACKAGE=ON
-```
+* Run CMake with these additional options:
+    ```
+    -DClang_DIR=<path/to/llvm_build>/lib/cmake/clang
+    -DBUILD_CXX_LANGUAGE_PACKAGE=ON
+    ```
+* Build Sourcetrail as described [above](#building).
 
 ## Enable Java Language Support
 
 ### Required dependencies
 
-#### JDK 1.8
+* __JDK 1.8__
+    * __Reason__: Used to build the Java indexer and make it callable from the C++ code via JNI.
+    * __Remarks__: Make sure that `<jdk_root>/bin` is available in your `PATH` environment variable and that the `JAVA_HOME` environment variable is set:
+        ```
+        JAVA_HOME=<path/to/Java>/jdk1.x.x_xxx
+        ```
 
-Install JDK and make sure the `JAVA_HOME` environment variable is set:
-```
-JAVA_HOME=.../Java/jdk1.x.x_xxx
-```
-
-Also make sure `<jdk_root>/bin` is available in your `PATH` environmen variable.
+* __Maven__
+    * __REASON__: Used within Sourcetrail's automated tests.
+    * __Remarks__:  Make sure `.../apache-maven-x.x.x/bin` is available in your `PATH` environment variable and that both `M2_HOME` and `MAVEN_HOME` environment variables are set:
+        ```
+        M2_HOME=.../apache-maven-x.x.x
+        MAVEN_HOME=.../apache-maven-x.x.x
+        ```
 
 ### Building
 
-Run CMake with these additional options:
-```
--DBUILD_JAVA_LANGUAGE_PACKAGE=ON
-```
-
+* Run CMake with these additional options:
+    ```
+    -DBUILD_JAVA_LANGUAGE_PACKAGE=ON
+    ```
+* Build Sourcetrail as described [above](#building).
 
 ## Enable Python Language Support
 
-### Required dependencies
+### Required Tools
 
-#### WinRAR (for Windows only)
+* __7z (required for Windows)__
+    * __REASON__: Used to extract the prebuilt SourcetrailPythonIndexer which is downloaded automatically during build execution.
 
 ### Building
 
-Run CMake with these additional options:
-```
--DBUILD_PYTHON_LANGUAGE_PACKAGE=ON
-```
+* Run CMake with these additional options:
+    ```
+    -DBUILD_PYTHON_LANGUAGE_PACKAGE=ON
+    ```
+* Build Sourcetrail as described [above](#building).
 
-## Packaging
+
+## Creating the deployment Package
 
 ### Windows
 
 #### Required Tools
 
-##### Visual Studio
+* __Visual Studio (required for Windows)__
+    * __Reason__: Used for building the Sourcetrail Windows installer.
+    * __Remarks__: Make sure to install the `.Net desktop development` workload.
+    * __Download__: https://visualstudio.microsoft.com/downloads/
 
-##### Wix 3.11
+* __Wix 3.11__
+    * __Reason__: Used to build the `sourcetrail.msi` Windows installer.
+    * __Remarks__: Make sure to add `<path/to>/WiX Toolset v3.11/bin` to your `PATH` environment variable.
+    * __Download__: https://wixtoolset.org/releases/
 
-##### Wix extension for Visual Studio
+* __Wix extension for Visual Studio__
+    * __Reason__: Used to run Wix from the Visual Studio build environment.
+    * __Download__: https://marketplace.visualstudio.com/items?itemName=WixToolset.WixToolsetVisualStudio2017Extension
 
-##### WinRAR
+* __JRE__
+    * __Reason__: Used for indexing the java sample project that ships with the package.
 
-Make sure to append these directories to your `PATH` environment variable:
-* VisualStudio/Common7/Tools
-* VisualStudio/Common7/IDE
-* .../Microsoft SDKs/Windows/v7.1A/Bin (for uuidgen in deploy script)
-* .../WiX Toolset v3.11/bin
-* .../WinRAR
+* __WinRAR__
+    * __Reason__: Used for creating the final zip files for the installer and the portable package.
+    * __Remarks__: Make sure to add `<path/to>/WinRAR` to your `PATH` environment variable.
 
-Run `./script/deploy_windows.sh` script which will generate 32bit/64bit builds and packages these into a portable `.zip` file and a Wix-based Windows installer, each.
+#### Building
+
+* Run `./script/deploy_windows.sh` from your Developer Command Prompt for Visual Studio. The script which will generate a 64bit build and packages it into a portable `.zip` file and a Wix-based Windows installer, each.
 
 ### macOS
 
@@ -212,7 +233,7 @@ After building, run the `bundle_install.sh` script within the build directory wh
 
 ### Linux
 
-Run `./script/buildonly.sh package`
+Run `./setup/Linux/createPackages.sh` from the main directory, which creates both a `.tar.gz` and a `.AppImage` package in the main directory. Packaging depends on [linuxdeployqt](https://github.com/probonopd/linuxdeployqt).
 
 
 # How to Run the Tests

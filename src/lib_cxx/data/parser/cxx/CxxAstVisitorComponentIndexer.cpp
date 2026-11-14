@@ -75,7 +75,7 @@ void CxxAstVisitorComponentIndexer::beginTraverseNestedNameSpecifierLoc(
 
 			if (symbolKind != SYMBOL_KIND_MAX)
 			{
-				Id symbolId = getOrCreateSymbolId(recordDecl);
+				const Id symbolId = getOrCreateSymbolId(recordDecl);
 				m_client->recordSymbolKind(symbolId, symbolKind);
 				m_client->recordLocation(
 					symbolId, getParseLocation(loc.getLocalBeginLoc()), ParseLocationType::QUALIFIER);
@@ -83,9 +83,22 @@ void CxxAstVisitorComponentIndexer::beginTraverseNestedNameSpecifierLoc(
 		}
 		else if (const clang::Type* type = loc.getNestedNameSpecifier()->getAsType())
 		{
-			Id symbolId = getOrCreateSymbolId(type);
-			m_client->recordLocation(
-				symbolId, getParseLocation(loc.getLocalBeginLoc()), ParseLocationType::QUALIFIER);
+			const ParseLocation parseLocation = getParseLocation(loc.getLocalBeginLoc());
+
+			if (const clang::TemplateTypeParmType* tpt =
+					clang::dyn_cast_or_null<clang::TemplateTypeParmType>(type))
+			{
+				clang::TemplateTypeParmDecl* d = tpt->getDecl();
+				if (d)
+				{
+					m_client->recordLocalSymbol(getLocalSymbolName(d->getLocation()), parseLocation);
+				}
+			}
+			else
+			{
+				const Id symbolId = getOrCreateSymbolId(type);
+				m_client->recordLocation(symbolId, parseLocation, ParseLocationType::QUALIFIER);
+			}
 		}
 	}
 }
@@ -104,10 +117,16 @@ void CxxAstVisitorComponentIndexer::beginTraverseTemplateArgumentLoc(
 			const ParseLocation parseLocation = getParseLocation(loc.getLocation());
 			if (templateTemplateArgumentName.isDependent())
 			{
-				m_client->recordLocalSymbol(
-					getLocalSymbolName(
-						templateTemplateArgumentName.getAsTemplateDecl()->getLocation()),
-					parseLocation);
+				clang::SourceLocation declLocation;
+				if (templateTemplateArgumentName.getAsTemplateDecl())
+				{
+					declLocation = templateTemplateArgumentName.getAsTemplateDecl()->getLocation();
+				}
+				else
+				{
+					declLocation = loc.getLocation();
+				}
+				m_client->recordLocalSymbol(getLocalSymbolName(declLocation), parseLocation);
 			}
 			else
 			{
@@ -301,7 +320,9 @@ void CxxAstVisitorComponentIndexer::visitFieldDecl(clang::FieldDecl* d)
 			{
 				for (clang::FieldDecl* templateFieldDecl: declaringRecordTemplateDecl->fields())
 				{
-					if (d->getName() == templateFieldDecl->getName())
+					if (d->getDeclName().isIdentifier() &&
+						templateFieldDecl->getDeclName().isIdentifier() &&
+						d->getName() == templateFieldDecl->getName())
 					{
 						Id templateFieldId = getOrCreateSymbolId(templateFieldDecl);
 						m_client->recordSymbolKind(templateFieldId, SYMBOL_FIELD);
@@ -343,8 +364,9 @@ void CxxAstVisitorComponentIndexer::visitFunctionDecl(clang::FunctionDecl* d)
 					 ->isExplicitSpecialization())
 			{
 				// record edge from Foo<int>::bar<float>() to Foo<T>::bar<U>() instead of recording
-				// an edge from Foo<int>::bar<float>() to Foo<int>::bar<U>() because there is not "written"
-				// code for Foo<int>::bar<U>() if Foo<int> is an implicit template specialization.
+				// an edge from Foo<int>::bar<float>() to Foo<int>::bar<U>() because there is not
+				// "written" code for Foo<int>::bar<U>() if Foo<int> is an implicit template
+				// specialization.
 				if (clang::CXXRecordDecl* declaringRecordDecl =
 						clang::dyn_cast_or_null<clang::CXXRecordDecl>(d->getParent()))
 				{
@@ -357,9 +379,12 @@ void CxxAstVisitorComponentIndexer::visitFunctionDecl(clang::FunctionDecl* d)
 									clang::dyn_cast_or_null<clang::FunctionTemplateDecl>(
 										templateMethodDecl))
 							{
-								if (d->getName() == functionTemplateDecl->getName())
+								if (d->getDeclName().isIdentifier() &&
+									functionTemplateDecl->getDeclName().isIdentifier() &&
+									d->getName() == functionTemplateDecl->getName())
 								{
-									Id templateMethodId = getOrCreateSymbolId(functionTemplateDecl);
+									const Id templateMethodId = getOrCreateSymbolId(
+										functionTemplateDecl);
 									m_client->recordSymbolKind(templateMethodId, SYMBOL_METHOD);
 									m_client->recordReference(
 										REFERENCE_TEMPLATE_SPECIALIZATION,
@@ -547,7 +572,7 @@ void CxxAstVisitorComponentIndexer::visitUsingDecl(clang::UsingDecl* d)
 
 void CxxAstVisitorComponentIndexer::visitNonTypeTemplateParmDecl(clang::NonTypeTemplateParmDecl* d)
 {
-	if (getAstVisitor()->shouldVisitDecl(d) &&
+	if (getAstVisitor()->shouldVisitDecl(d) && d->getDeclName().isIdentifier() &&
 		!d->getName().empty())	  // We don't create symbols for unnamed template parameters.
 	{
 		m_client->recordLocalSymbol(
@@ -557,7 +582,7 @@ void CxxAstVisitorComponentIndexer::visitNonTypeTemplateParmDecl(clang::NonTypeT
 
 void CxxAstVisitorComponentIndexer::visitTemplateTypeParmDecl(clang::TemplateTypeParmDecl* d)
 {
-	if (getAstVisitor()->shouldVisitDecl(d) &&
+	if (getAstVisitor()->shouldVisitDecl(d) && d->getDeclName().isIdentifier() &&
 		!d->getName().empty())	  // We don't create symbols for unnamed template parameters.
 	{
 		m_client->recordLocalSymbol(
@@ -567,7 +592,7 @@ void CxxAstVisitorComponentIndexer::visitTemplateTypeParmDecl(clang::TemplateTyp
 
 void CxxAstVisitorComponentIndexer::visitTemplateTemplateParmDecl(clang::TemplateTemplateParmDecl* d)
 {
-	if (getAstVisitor()->shouldVisitDecl(d) &&
+	if (getAstVisitor()->shouldVisitDecl(d) && d->getDeclName().isIdentifier() &&
 		!d->getName().empty())	  // We don't create symbols for unnamed template parameters.
 	{
 		m_client->recordLocalSymbol(
@@ -577,17 +602,23 @@ void CxxAstVisitorComponentIndexer::visitTemplateTemplateParmDecl(clang::Templat
 
 void CxxAstVisitorComponentIndexer::visitTypeLoc(clang::TypeLoc tl)
 {
-	clang::TypeLoc::TypeLocClass tlcc = tl.getTypeLocClass();
+	if (tl.isNull())
+	{
+		return;
+	}
+
 	if ((getAstVisitor()->shouldVisitReference(tl.getBeginLoc())) &&
 		(!getAstVisitor()->checkIgnoresTypeLoc(tl)))
 	{
-		clang::TypeLoc::TypeLocClass tlcc = tl.getTypeLocClass();
 		if (!tl.getAs<clang::TemplateTypeParmTypeLoc>().isNull())
 		{
 			const clang::TemplateTypeParmTypeLoc& ttptl = tl.castAs<clang::TemplateTypeParmTypeLoc>();
-			clang::TemplateTypeParmDecl* d = ttptl.getDecl();
-			m_client->recordLocalSymbol(
-				getLocalSymbolName(d->getLocation()), getParseLocation(tl.getBeginLoc()));
+			clang::TemplateTypeParmDecl* decl = ttptl.getDecl();
+			if (decl)
+			{
+				m_client->recordLocalSymbol(
+					getLocalSymbolName(decl->getLocation()), getParseLocation(tl.getBeginLoc()));
+			}
 		}
 		else
 		{
@@ -596,19 +627,25 @@ void CxxAstVisitorComponentIndexer::visitTypeLoc(clang::TypeLoc tl)
 				const clang::TemplateSpecializationTypeLoc& tstl =
 					tl.castAs<clang::TemplateSpecializationTypeLoc>();
 				const clang::TemplateSpecializationType* tst = tstl.getTypePtr();
-				const clang::TemplateName tln = tst->getTemplateName();
-				clang::TemplateName::NameKind nknk = tln.getKind();
-				if (tln.isDependent())	  // e.g. T<int> where the template name T depends on a
-										  // template parameter
+				if (tst)
 				{
-					clang::TemplateDecl* d = tst->getTemplateName().getAsTemplateDecl();
-					m_client->recordLocalSymbol(
-						getLocalSymbolName(d->getLocation()), getParseLocation(tl.getBeginLoc()));
-					return;
+					const clang::TemplateName tln = tst->getTemplateName();
+					if (tln.isDependent())	  // e.g. T<int> where the template name T depends on a
+											  // template parameter
+					{
+						clang::TemplateDecl* decl = tln.getAsTemplateDecl();
+						if (decl)
+						{
+							m_client->recordLocalSymbol(
+								getLocalSymbolName(decl->getLocation()),
+								getParseLocation(tl.getBeginLoc()));
+						}
+						return;
+					}
 				}
 			}
 
-			Id symbolId = getOrCreateSymbolId(tl.getTypePtr());
+			const Id symbolId = getOrCreateSymbolId(tl.getTypePtr());
 
 			if (clang::dyn_cast_or_null<clang::BuiltinType>(tl.getTypePtr()))
 			{
@@ -763,7 +800,7 @@ void CxxAstVisitorComponentIndexer::visitCXXConstructExpr(clang::CXXConstructExp
 		loc = clang::Lexer::GetBeginningOfToken(
 			loc, m_astContext->getSourceManager(), m_astContext->getLangOpts());
 
-		Id symbolId = getOrCreateSymbolId(s->getConstructor());
+		const Id symbolId = getOrCreateSymbolId(s->getConstructor());
 
 		const ReferenceKind refKind = consumeDeclRefContextKind();
 		if (refKind == REFERENCE_CALL)
@@ -777,6 +814,34 @@ void CxxAstVisitorComponentIndexer::visitCXXConstructExpr(clang::CXXConstructExp
 			getOrCreateSymbolId(
 				getAstVisitor()->getComponent<CxxAstVisitorComponentContext>()->getContext()),
 			getParseLocation(loc));
+	}
+}
+
+void CxxAstVisitorComponentIndexer::visitCXXDeleteExpr(clang::CXXDeleteExpr* s)
+{
+	if (!s->isArrayForm() && getAstVisitor()->shouldVisitReference(s->getBeginLoc()))
+	{
+		clang::QualType destroyedTypeQual = s->getDestroyedType();
+		const clang::Type* destroyedType = destroyedTypeQual.getTypePtrOrNull();
+		if (destroyedType != nullptr)
+		{
+			clang::CXXRecordDecl* recordDecl = destroyedType->getAsCXXRecordDecl();
+			if (recordDecl != nullptr)
+			{
+				clang::CXXDestructorDecl* destructorDecl = recordDecl->getDestructor();
+				if (destructorDecl != nullptr)
+				{
+					const Id symbolId = getOrCreateSymbolId(destructorDecl);
+
+					m_client->recordReference(
+						REFERENCE_CALL,
+						symbolId,
+						getOrCreateSymbolId(
+							getAstVisitor()->getComponent<CxxAstVisitorComponentContext>()->getContext()),
+						getParseLocation(s->getBeginLoc()));
+				}
+			}
+		}
 	}
 }
 
@@ -951,7 +1016,7 @@ Id CxxAstVisitorComponentIndexer::getOrCreateSymbolId(const clang::NamedDecl* de
 				symbolName.pop();
 				symbolName.push(NameElement(
 					L".:main:." +
-						getAstVisitor()->getCanonicalFilePathCache()->getDeclarationFileName(decl),
+						getAstVisitor()->getCanonicalFilePathCache()->getDeclarationFilePath(decl).wstr(),
 					sig.getPrefix(),
 					sig.getPostfix()));
 			}

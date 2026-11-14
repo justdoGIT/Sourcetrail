@@ -5,6 +5,7 @@
 #include <cstdarg>
 #include <deque>
 #include <functional>
+#include <list>
 #include <map>
 #include <set>
 #include <unordered_set>
@@ -16,7 +17,7 @@
 namespace utility
 {
 template <typename T>
-std::vector<std::vector<T>> splitToEqualySizedParts(
+std::vector<std::vector<T>> splitToEquallySizedParts(
 	const std::vector<T>& values, const size_t desiredPartCount);
 
 template <typename T>
@@ -48,6 +49,9 @@ std::vector<T> toVector(const std::deque<T>& d);
 
 template <typename T>
 std::vector<T> toVector(const std::set<T>& d);
+
+template <typename T>
+std::vector<T> toVector(const std::list<T>& d);
 
 template <typename T>
 std::set<T> toSet(const std::vector<T>& d);
@@ -127,7 +131,7 @@ size_t digits(size_t n);
 }	 // namespace utility
 
 template <typename T>
-std::vector<std::vector<T>> utility::splitToEqualySizedParts(
+std::vector<std::vector<T>> utility::splitToEquallySizedParts(
 	const std::vector<T>& values, const size_t desiredPartCount)
 {
 	const size_t partCount = std::max<size_t>(1, std::min(desiredPartCount, values.size()));
@@ -235,6 +239,15 @@ std::vector<T> utility::toVector(const std::deque<T>& d)
 
 template <typename T>
 std::vector<T> utility::toVector(const std::set<T>& d)
+{
+	std::vector<T> v;
+	v.reserve(d.size());
+	v.insert(v.begin(), d.begin(), d.end());
+	return v;
+}
+
+template <typename T>
+std::vector<T> utility::toVector(const std::list<T>& d)
 {
 	std::vector<T> v;
 	v.reserve(d.size());

@@ -11,7 +11,7 @@ QtRequest::QtRequest()
 	QObject::connect(m_networkManager, &QNetworkAccessManager::finished, this, &QtRequest::finished);
 }
 
-void QtRequest::sendRequest(QString url)
+void QtRequest::sendRequest(const QString& url)
 {
 	LOG_INFO_STREAM(<< "send HTTP request: " << url.toStdString());
 
@@ -40,13 +40,13 @@ void QtRequest::finished(QNetworkReply* reply)
 
 	if (reply->error() != QNetworkReply::NoError)
 	{
-		LOG_ERROR_STREAM(<< "An error occured during http request. ERRORCODE: " << reply->error());
+		LOG_ERROR_STREAM(<< "An error occurred during http request. ERRORCODE: " << reply->error());
 	}
 
 	QByteArray bytes = reply->readAll();
 	LOG_INFO_STREAM(<< "received HTTP reply: " << bytes.toStdString());
 
-	delete reply;
+	reply->deleteLater();
 
 	emit receivedData(bytes);
 }

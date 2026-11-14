@@ -5,7 +5,6 @@
 #if BUILD_JAVA_LANGUAGE_PACKAGE
 
 #	include <fstream>
-#	include <iostream>
 
 #	include "ApplicationSettings.h"
 #	include "FileRegister.h"
@@ -13,7 +12,7 @@
 #	include "JavaEnvironmentFactory.h"
 #	include "JavaParser.h"
 #	include "ParserClientImpl.h"
-#	include "TestIntermediateStorage.h"
+#	include "TestStorage.h"
 #	include "TextAccess.h"
 #	include "TimeStamp.h"
 #	include "utility.h"
@@ -66,19 +65,17 @@ std::shared_ptr<TextAccess> parseCode(
 	const FilePath& projectDataSrcRoot,
 	const std::vector<FilePath>& classpath)
 {
-	TestIntermediateStorage storage;
+	std::shared_ptr<IntermediateStorage> storage = std::make_shared<IntermediateStorage>();
 	JavaParser parser(
-		std::make_shared<ParserClientImpl>(&storage), std::make_shared<IndexerStateInfo>());
+		std::make_shared<ParserClientImpl>(storage.get()), std::make_shared<IndexerStateInfo>());
 	std::shared_ptr<IndexerCommandJava> command = std::make_shared<IndexerCommandJava>(
-		sourceFilePath, L"8", classpath);
+		sourceFilePath, L"12", classpath);
 
 	TimeStamp startTime = TimeStamp::now();
 	parser.buildIndex(command);
 	duration += TimeStamp::now().deltaMS(startTime);
 
-	storage.generateStringLists();
-
-	return TextAccess::createFromLines(storage.m_lines);
+	return TextAccess::createFromLines(TestStorage::create(storage)->m_lines);
 }
 
 void processSourceFile(
@@ -109,12 +106,12 @@ void processSourceFile(
 			expectedOutputFilePath);
 		REQUIRE_MESSAGE(
 			("Output does not match the expected line count for file " + sourceFilePath.str() +
-			 " in project " + projectName)
+			 " in project " + projectName + ". Output was: " + output->getText())
 				.c_str(),
 			expectedOutput->getLineCount() == output->getLineCount());
 		if (expectedOutput->getLineCount() == output->getLineCount())
 		{
-			for (size_t i = 1; i <= expectedOutput->getLineCount(); i++)
+			for (unsigned int i = 1; i <= expectedOutput->getLineCount(); i++)
 			{
 				REQUIRE(expectedOutput->getLine(i) == output->getLine(i));
 			}

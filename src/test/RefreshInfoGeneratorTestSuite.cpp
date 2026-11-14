@@ -1,5 +1,7 @@
 #include "catch.hpp"
 
+#include <QDateTime>
+
 #include "FileSystem.h"
 #include "PersistentStorage.h"
 #include "ProjectSettings.h"
@@ -134,7 +136,7 @@ Id addFileToStorage(
 	const Id id =
 		storage
 			->addNode(StorageNodeData(
-				NodeType::NODE_FILE,
+				NODE_FILE,
 				NameHierarchy::serialize(NameHierarchy(filePath.wstr(), NAME_DELIMITER_FILE))))
 			.first;
 	storage->addFile(
@@ -145,13 +147,23 @@ Id addFileToStorage(
 Id addVeryOldFileToStorage(
 	const FilePath& filePath, bool indexed, bool complete, std::shared_ptr<PersistentStorage> storage)
 {
-	return addFileToStorage(filePath, "2000-01-01 10:10:10", indexed, complete, storage);
+	return addFileToStorage(
+		filePath,
+		QDateTime::currentDateTime().addDays(-1).toString("yyyy-MM-dd hh:mm:ss").toStdString(),
+		indexed,
+		complete,
+		storage);
 }
 
 Id addVeryNewFileToStorage(
 	const FilePath& filePath, bool indexed, bool complete, std::shared_ptr<PersistentStorage> storage)
 {
-	return addFileToStorage(filePath, "2020-01-01 10:10:10", indexed, complete, storage);
+	return addFileToStorage(
+		filePath,
+		QDateTime::currentDateTime().addDays(1).toString("yyyy-MM-dd hh:mm:ss").toStdString(),
+		indexed,
+		complete,
+		storage);
 }
 }	 // namespace
 
@@ -331,7 +343,7 @@ TEST_CASE("refresh info for updated files is empty for empty storage and empty s
 //	file may be a source file							sourcefile / headerfile
 //	file may now be indexed by the source group			nottoindex / toindex
 //
-// We now wite a TEST_CASE that checks for the expected result for every possible combination.
+// We now write a TEST_CASE that checks for the expected result for every possible combination.
 //	Example: test_unknown_unchanged_sourcefile_that_is_nottoindex
 namespace
 {
@@ -559,7 +571,7 @@ TEST_CASE("nonindexed changed headerfile that is nottoindex")
 	const RefreshInfo refreshInfo = getRefreshInfo(NON_INDEXED, CHANGED, HEADER_FILE, NOT_TO_INDEX);
 	REQUIRE(REFRESH_UPDATED_FILES == refreshInfo.mode);
 	REQUIRE(1 == refreshInfo.nonIndexedFilesToClear.size());
-	;	 // must be cleard here and will be re-indexed on demand
+	;	 // must be cleared here and will be re-indexed on demand
 	REQUIRE(0 == refreshInfo.filesToClear.size());
 	REQUIRE(0 == refreshInfo.filesToIndex.size());
 }
@@ -570,8 +582,7 @@ TEST_CASE("nonindexed changed headerfile that is toindex")
 	REQUIRE(REFRESH_UPDATED_FILES == refreshInfo.mode);
 	REQUIRE(1 == refreshInfo.nonIndexedFilesToClear.size());
 	REQUIRE(0 == refreshInfo.filesToClear.size());
-	REQUIRE(0 == refreshInfo.filesToIndex.size());
-	;	 // the header file will only be indexed on demand
+	REQUIRE(0 == refreshInfo.filesToIndex.size());	  // the header file will only be indexed on demand
 }
 
 TEST_CASE("indexed unchanged sourcefile that is nottoindex")
@@ -644,8 +655,7 @@ TEST_CASE("indexed changed headerfile that is toindex")
 	REQUIRE(REFRESH_UPDATED_FILES == refreshInfo.mode);
 	REQUIRE(0 == refreshInfo.nonIndexedFilesToClear.size());
 	REQUIRE(1 == refreshInfo.filesToClear.size());
-	REQUIRE(0 == refreshInfo.filesToIndex.size());
-	;	 // the header file will only be indexed on demand
+	REQUIRE(0 == refreshInfo.filesToIndex.size());	  // the header file will only be indexed on demand
 }
 
 // Now we test some referencing stuff
@@ -838,7 +848,7 @@ TEST_CASE("refresh info for updated files does not clear unknown uptodate header
 }
 
 TEST_CASE(
-	"refresh info for updated files clears outdated source file and referened uptodate header file")
+	"refresh info for updated files clears outdated source file and referenced uptodate header file")
 {
 	cleanup();
 	{

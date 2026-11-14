@@ -3,6 +3,7 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/DeclTemplate.h>
 #include <clang/Lex/Preprocessor.h>
+#include <clang/Basic/FileManager.h>
 
 #include "CanonicalFilePathCache.h"
 #include "FilePath.h"
@@ -68,6 +69,8 @@ AccessKind utility::convertAccessSpecifier(clang::AccessSpecifier access)
 		return ACCESS_PRIVATE;
 	case clang::AS_none:
 		return ACCESS_NONE;
+	default:
+		return ACCESS_NONE;
 	}
 }
 
@@ -84,6 +87,8 @@ SymbolKind utility::convertTagKind(const clang::TagTypeKind tagKind)
 	case clang::TTK_Enum:
 		return SYMBOL_ENUM;
 	case clang::TTK_Interface:
+		return SYMBOL_KIND_MAX;
+	default:
 		return SYMBOL_KIND_MAX;
 	}
 }
@@ -126,10 +131,10 @@ std::wstring utility::getFileNameOfFileEntry(const clang::FileEntry* entry)
 	std::wstring fileName = L"";
 	if (entry != nullptr && entry->isValid())
 	{
-		fileName = utility::decodeFromUtf8(entry->tryGetRealPathName());
+		fileName = utility::decodeFromUtf8(entry->tryGetRealPathName().str());
 		if (fileName.empty())
 		{
-			fileName = utility::decodeFromUtf8(entry->getName());
+			fileName = utility::decodeFromUtf8(entry->getName().str());
 		}
 		else
 		{

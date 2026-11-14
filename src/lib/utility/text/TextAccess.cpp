@@ -21,7 +21,7 @@ std::istream& safeGetline(std::istream& is, std::string& t)
 
 	while (true)
 	{
-		int c = sb->sbumpc();
+		const int c = sb->sbumpc();
 		switch (c)
 		{
 		case '\n':
@@ -77,11 +77,9 @@ std::shared_ptr<TextAccess> TextAccess::createFromLines(
 	return result;
 }
 
-TextAccess::~TextAccess() {}
-
 unsigned int TextAccess::getLineCount() const
 {
-	return m_lines.size();
+	return static_cast<unsigned int>(m_lines.size());
 }
 
 bool TextAccess::isEmpty() const
@@ -142,7 +140,7 @@ std::vector<std::string> TextAccess::readFile(const FilePath& filePath)
 	try
 	{
 		std::ifstream srcFile;
-		srcFile.open(filePath.str());
+		srcFile.open(filePath.str(), std::ios::binary | std::ios::in);
 
 		if (srcFile.fail())
 		{

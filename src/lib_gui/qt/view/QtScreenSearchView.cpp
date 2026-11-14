@@ -16,7 +16,7 @@ QtScreenSearchView::QtScreenSearchView(ViewLayout* viewLayout)
 	m_widget = new QtScreenSearchBox(&m_controllerProxy);
 
 	m_bar = new QToolBar();
-	m_bar->setObjectName("screen_search_bar");
+	m_bar->setObjectName(QStringLiteral("screen_search_bar"));
 	m_bar->setMovable(false);
 	m_bar->addWidget(m_widget);
 
@@ -40,7 +40,7 @@ void QtScreenSearchView::refreshView()
 {
 	m_onQtThread([=]() {
 		m_bar->setStyleSheet(
-			utility::getStyleSheet(ResourcePaths::getGuiPath().concatenate(
+			utility::getStyleSheet(ResourcePaths::getGuiDirectoryPath().concatenate(
 									   L"screen_search_view/screen_search_view.css"))
 				.c_str());
 	});

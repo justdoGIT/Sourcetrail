@@ -32,7 +32,10 @@ public:
 
 	static CharT* CopyFn(CharT* destination, const CharT* source, size_t num)
 	{
+#pragma warning(push)
+#pragma warning(disable : 4996)
 		return strncpy(destination, source, num);
+#pragma warning(pop)
 	}
 };
 
@@ -50,7 +53,10 @@ public:
 
 	static CharT* CopyFn(CharT* destination, const CharT* source, size_t num)
 	{
+#pragma warning(push)
+#pragma warning(disable : 4996)
 		return wcsncpy(destination, source, num);
+#pragma warning(pop)
 	}
 };
 
@@ -241,7 +247,7 @@ private:
 	/*
 	 * Nodes
 	 *
-	 * These types are used to build the tree structure. They are either branches or leafes and
+	 * These types are used to build the tree structure. They are either branches or leaves and
 	 * contain a StringType
 	 */
 
@@ -312,7 +318,7 @@ private:
 	/*
 	 * StringLeaf
 	 *
-	 * Combines Leaf and StringType to allow for creating leafes of different string lengths, that
+	 * Combines Leaf and StringType to allow for creating leaves of different string lengths, that
 	 * can still be stored in a collection of Node types.
 	 */
 	template <typename StringType>

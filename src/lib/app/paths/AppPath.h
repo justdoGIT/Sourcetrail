@@ -6,11 +6,15 @@
 class AppPath
 {
 public:
-	static FilePath getAppPath();
-	static bool setAppPath(const FilePath& path);
+	static FilePath getSharedDataDirectoryPath();
+	static bool setSharedDataDirectoryPath(const FilePath& path);
+
+	static FilePath getCxxIndexerFilePath();
+	static bool setCxxIndexerDirectoryPath(const FilePath& path);
 
 private:
-	static FilePath m_appPath;
+	static FilePath s_sharedDataDirectoryPath;
+	static FilePath s_cxxIndexerDirectoryPath;
 };
 
 #endif	  // APP_PATH_H

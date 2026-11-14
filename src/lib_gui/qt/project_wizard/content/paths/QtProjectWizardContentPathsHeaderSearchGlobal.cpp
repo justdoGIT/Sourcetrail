@@ -12,17 +12,20 @@ QtProjectWizardContentPathsHeaderSearchGlobal::QtProjectWizardContentPathsHeader
 	: QtProjectWizardContentPaths(
 		  std::shared_ptr<SourceGroupSettings>(),
 		  window,
-		  QtPathListBox::SELECTION_POLICY_DIRECTORIES_ONLY)
+		  QtPathListBox::SELECTION_POLICY_DIRECTORIES_ONLY,
+		  true)
 {
-	setTitleString("Global Include Paths");
-	setHelpString(
+	setTitleString(QStringLiteral("Global Include Paths"));
+	setHelpString(QString::fromStdString(
 		"The Global Include Paths will be used in all your projects in addition to the project "
 		"specific Include Paths. "
 		"These paths are usually passed to the compiler with the '-isystem' flag.<br />"
 		"<br />"
 		"Use them to add system header paths (See <a "
-		"href=\"https://sourcetrail.com/documentation/#FindingSystemHeaderLocations\">"
-		"Finding System Header Locations</a> or use the auto detection below).");
+		"href=\"" +
+		utility::getDocumentationLink() +
+		"#finding-system-header-locations\">"
+		"Finding System Header Locations</a> or use the auto detection below)."));
 
 	m_pathDetector = utility::getCxxHeaderPathDetector();
 	m_makePathsRelativeToProjectFileLocation = false;
@@ -38,7 +41,7 @@ void QtProjectWizardContentPathsHeaderSearchGlobal::save()
 	std::vector<FilePath> paths;
 	for (const FilePath& headerPath: m_list->getPathsAsDisplayed())
 	{
-		if (headerPath != ResourcePaths::getCxxCompilerHeaderPath())
+		if (headerPath != ResourcePaths::getCxxCompilerHeaderDirectoryPath())
 		{
 			paths.push_back(headerPath);
 		}
@@ -59,7 +62,7 @@ bool QtProjectWizardContentPathsHeaderSearchGlobal::check()
 	QString compilerHeaderPaths;
 	for (const FilePath& headerPath: m_list->getPathsAsDisplayed())
 	{
-		if (headerPath != ResourcePaths::getCxxCompilerHeaderPath() &&
+		if (headerPath != ResourcePaths::getCxxCompilerHeaderDirectoryPath() &&
 			headerPath.getCanonical().getConcatenated(L"/stdarg.h").exists())
 		{
 			compilerHeaderPaths += QString::fromStdWString(headerPath.wstr()) + "\n";
@@ -72,18 +75,19 @@ bool QtProjectWizardContentPathsHeaderSearchGlobal::check()
 
 	if (compilerHeaderPaths.size())
 	{
-		QMessageBox msgBox;
-		msgBox.setText("Multiple Compiler Headers");
+		QMessageBox msgBox(m_window);
+		msgBox.setText(QStringLiteral("Multiple Compiler Headers"));
 		msgBox.setInformativeText(
 			"Your Global Include Paths contain other paths that hold C/C++ compiler headers, "
 			"probably those of your local C/C++ compiler. They are possibly in conflict with the "
 			"compiler headers of "
-			"Sourcetrail's C/C++ indexer. This can lead to compatiblity errors during indexing. Do "
+			"Sourcetrail's C/C++ indexer. This can lead to compatibility errors during indexing. "
+			"Do "
 			"you want to remove "
 			"these paths?");
 		msgBox.setDetailedText(compilerHeaderPaths);
-		msgBox.addButton("Remove", QMessageBox::ButtonRole::YesRole);
-		msgBox.addButton("Keep", QMessageBox::ButtonRole::NoRole);
+		msgBox.addButton(QStringLiteral("Remove"), QMessageBox::ButtonRole::YesRole);
+		msgBox.addButton(QStringLiteral("Keep"), QMessageBox::ButtonRole::NoRole);
 		msgBox.setIcon(QMessageBox::Icon::Question);
 		int ret = msgBox.exec();
 
@@ -102,7 +106,7 @@ void QtProjectWizardContentPathsHeaderSearchGlobal::detectedPaths(const std::vec
 	std::vector<FilePath> headerPaths;
 	for (const FilePath& headerPath: paths)
 	{
-		if (headerPath != ResourcePaths::getCxxCompilerHeaderPath())
+		if (headerPath != ResourcePaths::getCxxCompilerHeaderDirectoryPath())
 		{
 			headerPaths.push_back(headerPath);
 		}
@@ -112,7 +116,34 @@ void QtProjectWizardContentPathsHeaderSearchGlobal::detectedPaths(const std::vec
 
 void QtProjectWizardContentPathsHeaderSearchGlobal::setPaths(const std::vector<FilePath>& paths)
 {
+	// check data change to avoid UI update that messes with the scroll position
+	{
+		std::vector<FilePath> currentPaths = m_list->getPathsAsDisplayed();
+		if (currentPaths.size())
+		{
+			currentPaths.erase(currentPaths.begin());
+		}
+
+		if (currentPaths.size() == paths.size())
+		{
+			bool same = true;
+			for (size_t i = 0; i < paths.size(); ++i)
+			{
+				if (currentPaths[i] != paths[i])
+				{
+					same = false;
+					break;
+				}
+			}
+
+			if (same)
+			{
+				return;
+			}
+		}
+	}
+
 	m_list->setPaths({});
-	m_list->addPaths({ResourcePaths::getCxxCompilerHeaderPath()}, true);
+	m_list->addPaths({ResourcePaths::getCxxCompilerHeaderDirectoryPath()}, true);
 	m_list->addPaths(paths);
 }

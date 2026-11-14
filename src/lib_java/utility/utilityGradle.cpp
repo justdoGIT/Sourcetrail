@@ -17,7 +17,7 @@ namespace utility
 bool gradleCopyDependencies(
 	const FilePath& projectDirectoryPath, const FilePath& outputDirectoryPath, bool addTestDependencies)
 {
-	const FilePath gradleInitScriptPath = ResourcePaths::getJavaPath().concatenate(
+	const FilePath gradleInitScriptPath = ResourcePaths::getJavaDirectoryPath().concatenate(
 		L"gradle/init.gradle");
 
 	utility::setJavaHomeVariableIfNotExists();
@@ -48,7 +48,7 @@ bool gradleCopyDependencies(
 std::vector<FilePath> gradleGetAllSourceDirectories(
 	const FilePath& projectDirectoryPath, bool addTestDirectories)
 {
-	const FilePath gradleInitScriptPath = ResourcePaths::getJavaPath().concatenate(
+	const FilePath gradleInitScriptPath = ResourcePaths::getJavaDirectoryPath().concatenate(
 		L"gradle/init.gradle");
 
 	utility::setJavaHomeVariableIfNotExists();
@@ -74,8 +74,10 @@ std::vector<FilePath> gradleGetAllSourceDirectories(
 					L"The following error occurred while executing a Gradle command:\n\n" +
 					utility::decodeFromUtf8(utility::replace(output, "\r\n", "\n"));
 				MessageStatus(dialogMessage, true, false).dispatch();
-				Application::getInstance()->handleDialog(dialogMessage);
-
+				if (Application::getInstance())
+				{
+					Application::getInstance()->handleDialog(dialogMessage);
+				}
 				return std::vector<FilePath>();
 			}
 

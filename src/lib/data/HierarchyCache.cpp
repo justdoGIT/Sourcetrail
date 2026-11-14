@@ -1,5 +1,7 @@
 #include "HierarchyCache.h"
 
+#include "utility.h"
+
 HierarchyCache::HierarchyNode::HierarchyNode(Id nodeId)
 	: m_nodeId(nodeId), m_edgeId(0), m_parent(nullptr), m_isVisible(true), m_isImplicit(false)
 {
@@ -112,31 +114,27 @@ void HierarchyCache::HierarchyNode::setIsImplicit(bool isImplicit)
 	m_isImplicit = isImplicit;
 }
 
-void HierarchyCache::HierarchyNode::addInheritanceEdgesRecursive(
-	Id startId,
-	std::vector<Id> inheritanceEdgeIds,
-	const std::set<Id>& nodeIds,
-	std::vector<std::tuple<Id, Id, std::vector<Id>>>* inheritanceEdges)
+std::map</*target*/ Id, std::vector<std::pair</*source*/ Id, /*edge*/ Id>>>
+HierarchyCache::HierarchyNode::getReverseReachableInheritanceSubgraph() const
 {
-	for (size_t i = 0; i < m_bases.size(); i++)
+	std::map<Id, std::vector<std::pair<Id, Id>>> reverseGraph;
+	reverseGraph.try_emplace(getNodeId());  // mark start node as visited
+	getReverseReachableInheritanceSubgraphHelper(reverseGraph);
+	return reverseGraph;
+}
+
+void HierarchyCache::HierarchyNode::getReverseReachableInheritanceSubgraphHelper(
+	std::map</*target*/ Id, std::vector<std::pair</*source*/ Id, /*edge*/ Id>>>& reverseGraph) const
+{
+	for (size_t i = 0; i < m_bases.size(); ++i)
 	{
 		HierarchyNode* base = m_bases[i];
-		Id baseId = base->getNodeId();
-
-		std::vector<Id> inheritanceEdgeIds2 = inheritanceEdgeIds;
-		inheritanceEdgeIds2.push_back(m_baseEdgeIds[i]);
-
-		if (nodeIds.find(baseId) != nodeIds.end())
+		auto emplacedBase = reverseGraph.try_emplace(base->getNodeId());
+		emplacedBase.first->second.push_back({getNodeId(), m_baseEdgeIds[i]});
+		if (emplacedBase.second)
 		{
-			std::vector<Id> inheritanceEdgeIds3 = inheritanceEdgeIds2;
-
-			inheritanceEdges->push_back(std::make_tuple<Id, Id, std::vector<Id>>(
-				std::forward<Id>(startId),
-				std::forward<Id>(baseId),
-				std::forward<std::vector<Id>>(inheritanceEdgeIds3)));
+			base->getReverseReachableInheritanceSubgraphHelper(reverseGraph);
 		}
-
-		base->addInheritanceEdgesRecursive(startId, inheritanceEdgeIds2, nodeIds, inheritanceEdges);
 	}
 }
 
@@ -338,20 +336,87 @@ bool HierarchyCache::nodeIsImplicit(Id nodeId) const
 	return false;
 }
 
-std::vector<std::tuple<Id, Id, std::vector<Id>>> HierarchyCache::getInheritanceEdgesForNodeId(
-	Id nodeId, const std::set<Id>& nodeIds) const
+std::vector<std::tuple</*source*/ Id, /*target*/ Id, std::vector</*edge*/ Id>>>
+HierarchyCache::getInheritanceEdgesForNodeId(
+	Id sourceId, const std::set<Id>& targetIds) const
 {
+	// For two nodes s and t of a graph g0, this function determines the subgraph g2 that consists
+	// of all nodes and edges that are reachable by going from s forwards and from t backwards as
+	// follows: First the subgraph g1 that consists of all nodes and edges that are reachable from s
+	// is determined. Afterwards g2 is determined by keeping only those nodes and edges of g1 that
+	// are reachable by going from t backwards. If t is not in g1, then the g2 is empty.
+	//
+	// For example (edges are pointing upwards):
+	//
+	//     g0  *            g1  *            g2
+	//         |                |
+	//         t                t                t
+	//         |                |                |
+	//     *   *            *   *                *
+	//      \ / \            \ / \              / \
+	//       *   *            *   *            *   *
+	//        \ / \            \ /              \ /
+	//         *   *            *                *
+	//         |                |                |
+	//         s                s                s
+	//         |
+	//         *
+
 	std::vector<std::tuple<Id, Id, std::vector<Id>>> inheritanceEdges;
 
-	HierarchyNode* node = getNode(nodeId);
-	if (node)
+	if (targetIds.empty())
 	{
-		std::vector<Id> inheritanceEdgeIds;
-		node->addInheritanceEdgesRecursive(
-			node->getNodeId(), inheritanceEdgeIds, nodeIds, &inheritanceEdges);
+		return inheritanceEdges;
+	}
+
+	HierarchyNode* sourceNode = getNode(sourceId);
+	if (!sourceNode)
+	{
+		return inheritanceEdges;
+	}
+
+	std::map<Id, std::vector<std::pair<Id, Id>>> reverseGraph
+		= sourceNode->getReverseReachableInheritanceSubgraph();
+
+	for (Id targetId : targetIds)
+	{
+		std::set<Id> nodes;
+		std::vector<Id> edges;
+		getReverseReachable(targetId, reverseGraph, nodes, edges);
+
+		if (!edges.empty())
+		{
+			inheritanceEdges.push_back({sourceId, targetId, std::move(edges)});
+		}
 	}
 
 	return inheritanceEdges;
+}
+
+void HierarchyCache::getReverseReachable(
+	Id nodeId,
+	const std::map</*target*/ Id, std::vector<std::pair</*source*/ Id, /*edge*/ Id>>>& reverseGraph,
+	std::set<Id>& nodes,
+	std::vector<Id>& edges)
+{
+	if (!nodes.insert(nodeId).second)
+	{
+		return;
+	}
+
+	auto search = reverseGraph.find(nodeId);
+	if (search == reverseGraph.end())
+	{
+		return;
+	}
+
+	for (const std::pair<Id, Id>& nodeAndEdge : search->second)
+	{
+		Id node = nodeAndEdge.first;
+		Id edge = nodeAndEdge.second;
+		edges.push_back(edge);
+		getReverseReachable(node, reverseGraph, nodes, edges);
+	}
 }
 
 HierarchyCache::HierarchyNode* HierarchyCache::getNode(Id nodeId) const

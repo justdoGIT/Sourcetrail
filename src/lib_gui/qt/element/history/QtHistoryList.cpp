@@ -29,7 +29,8 @@ QtHistoryItem::QtHistoryItem(const SearchMatch& match, size_t index, bool isCurr
 	m_name = new QLabel(QString::fromStdWString(name), this);
 	m_name->setAttribute(Qt::WA_MacShowFocusRect, 0);
 	m_name->setAttribute(Qt::WA_LayoutUsesWidgetRect);	  // fixes layouting on Mac
-	m_name->setObjectName(isCurrent ? "history_item_current" : "history_item");
+	m_name->setObjectName(
+		isCurrent ? QStringLiteral("history_item_current") : QStringLiteral("history_item"));
 	m_name->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
 
 	layout->addWidget(m_name);
@@ -65,7 +66,7 @@ QtHistoryItem::QtHistoryItem(const SearchMatch& match, size_t index, bool isCurr
 	if (isCurrent)
 	{
 		QtDeviceScaledPixmap pixmap(QString::fromStdWString(
-			ResourcePaths::getGuiPath().concatenate(L"history_list/images/arrow.png").wstr()));
+			ResourcePaths::getGuiDirectoryPath().concatenate(L"history_list/images/arrow.png").wstr()));
 		pixmap.scaleToHeight(size.height() / 3);
 
 		QLabel* arrow = new QLabel(this);
@@ -79,7 +80,8 @@ QtHistoryItem::QtHistoryItem(const SearchMatch& match, size_t index, bool isCurr
 QSize QtHistoryItem::getSizeHint() const
 {
 	return QSize(
-		m_name->fontMetrics().width(m_name->text()) + 40, m_name->fontMetrics().height() + 8);
+		m_name->fontMetrics().boundingRect(m_name->text()).width() + 40,
+		m_name->fontMetrics().height() + 8);
 }
 
 const SearchMatch& QtHistoryItem::getMatch() const
@@ -95,7 +97,7 @@ void QtHistoryItem::enterEvent(QEvent* event)
 	css << "QWidget { background-color:" << m_indicatorHoverColor << ";}";
 	m_indicator->setStyleSheet(css.str().c_str());
 
-	if (m_name->objectName() != "history_item")
+	if (m_name->objectName() != QLatin1String("history_item"))
 	{
 		return;
 	}
@@ -113,7 +115,7 @@ void QtHistoryItem::leaveEvent(QEvent* event)
 	css << "QWidget { background-color:" << m_indicatorColor << ";}";
 	m_indicator->setStyleSheet(css.str().c_str());
 
-	if (m_name->objectName() != "history_item")
+	if (m_name->objectName() != QLatin1String("history_item"))
 	{
 		return;
 	}
@@ -146,10 +148,10 @@ QtHistoryList::QtHistoryList(const std::vector<SearchMatch>& history, size_t cur
 	: m_currentIndex(currentIndex)
 {
 	setWindowFlags(Qt::Popup);
-	setObjectName("history");
+	setObjectName(QStringLiteral("history"));
 
 	m_list = new QtHistoryListWidget(this);
-	m_list->setObjectName("history_list");
+	m_list->setObjectName(QStringLiteral("history_list"));
 	m_list->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	m_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
@@ -162,7 +164,7 @@ QtHistoryList::QtHistoryList(const std::vector<SearchMatch>& history, size_t cur
 	}
 
 	setStyleSheet(utility::getStyleSheet(
-					  ResourcePaths::getGuiPath().concatenate(L"history_list/history_list.css"))
+					  ResourcePaths::getGuiDirectoryPath().concatenate(L"history_list/history_list.css"))
 					  .c_str());
 
 	connect(m_list, &QListWidget::itemClicked, this, &QtHistoryList::onItemClicked);

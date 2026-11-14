@@ -9,7 +9,7 @@
 #include "FilePath.h"
 #include "TimeStamp.h"
 
-#include "QtCodeNavigateable.h"
+#include "QtCodeNavigable.h"
 
 class QLabel;
 class QPushButton;
@@ -19,7 +19,7 @@ class QtCodeNavigator;
 
 class QtCodeFileSingle
 	: public QFrame
-	, public QtCodeNavigateable
+	, public QtCodeNavigable
 {
 	Q_OBJECT
 
@@ -32,7 +32,7 @@ public:
 
 	bool addFile(const CodeFileParams& params, bool useSingleFileCache);
 
-	// QtCodeNavigateable implementation
+	// QtCodeNavigable implementation
 	QAbstractScrollArea* getScrollArea() override;
 
 	void updateSourceLocations(const CodeSnippetParams& params) override;
@@ -42,13 +42,21 @@ public:
 		const FilePath& filePath,
 		size_t lineNumber,
 		Id locationId,
+		Id scopeLocationId,
 		bool animated,
-		CodeScrollParams::Target target) override;
+		CodeScrollParams::Target target,
+		bool focusTarget) override;
 
 	void onWindowFocus() override;
 
 	void findScreenMatches(
 		const std::wstring& query, std::vector<std::pair<QtCodeArea*, Id>>* screenMatches) override;
+
+	void setFocus(Id locationId) override;
+	void setFocusOnTop() override;
+	void moveFocus(const CodeFocusHandler::Focus& focus, CodeFocusHandler::Direction direction) override;
+
+	void copySelection() override;
 
 	const FilePath& getCurrentFilePath() const;
 	bool hasFileCached(const FilePath& filePath) const;

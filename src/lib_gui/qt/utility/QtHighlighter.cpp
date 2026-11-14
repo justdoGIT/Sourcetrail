@@ -42,7 +42,7 @@ std::string QtHighlighter::highlightTypeToString(QtHighlighter::HighlightType ty
 	return "text";
 }
 
-QtHighlighter::HighlightType QtHighlighter::highlightTypeFromString(const std::string typeStr)
+QtHighlighter::HighlightType QtHighlighter::highlightTypeFromString(const std::string& typeStr)
 {
 	const std::array<HighlightType, 8> types = {
 		HighlightType::COMMENT,
@@ -87,8 +87,8 @@ void QtHighlighter::loadHighlightingRules()
 		s_charFormats.emplace(type, format);
 	}
 
-	for (const FilePath path: FileSystem::getFilePathsFromDirectory(
-			 ResourcePaths::getSyntaxHighlightingRulesPath(), {L".rules"}))
+	for (const FilePath& path: FileSystem::getFilePathsFromDirectory(
+			 ResourcePaths::getSyntaxHighlightingRulesDirectoryPath(), {L".rules"}))
 	{
 		std::wstring language = path.withoutExtension().fileName();
 
@@ -100,7 +100,7 @@ void QtHighlighter::loadHighlightingRules()
 		if (doc.isNull() || !doc.isArray())
 		{
 			LOG_ERROR_STREAM(
-				<< "Highlinghting rules in \"" << path.str()
+				<< "Highlighting rules in \"" << path.str()
 				<< "\" couldn't be parsed as JSON: "
 				   "offset "
 				<< error.offset << " - " << error.errorString().toStdString());
@@ -119,11 +119,11 @@ void QtHighlighter::loadHighlightingRules()
 			QJsonObject ruleObj = value.toObject();
 
 			HighlightType type = highlightTypeFromString(
-				ruleObj.value("type").toString().toStdString());
+				ruleObj.value(QStringLiteral("type")).toString().toStdString());
 
-			bool priority = ruleObj.value("priority").toBool();
+			bool priority = ruleObj.value(QStringLiteral("priority")).toBool();
 
-			QJsonArray patterns = ruleObj.value("patterns").toArray();
+			QJsonArray patterns = ruleObj.value(QStringLiteral("patterns")).toArray();
 			for (QJsonValueRef pattern: patterns)
 			{
 				if (pattern.isString())
@@ -132,7 +132,7 @@ void QtHighlighter::loadHighlightingRules()
 				}
 			}
 
-			QJsonObject range = ruleObj.value("range").toObject();
+			QJsonObject range = ruleObj.value(QStringLiteral("range")).toObject();
 			if (!range.empty())
 			{
 				rules.push_back(HighlightingRule(
@@ -172,8 +172,8 @@ void QtHighlighter::highlightDocument()
 
 	QTextDocument* doc = document();
 
-	size_t docStart = 0;
-	size_t docEnd = 0;
+	int docStart = 0;
+	int docEnd = 0;
 	for (int i = 0; i < doc->blockCount(); i++)
 	{
 		docEnd += doc->findBlockByLineNumber(i).length();

@@ -195,7 +195,7 @@ TEST_CASE("file_path_differs_for_different_existing_files")
 	REQUIRE(pathA != pathB);
 }
 
-TEST_CASE("file_path_differs_for_different_nonexisting_files")
+TEST_CASE("file_path_differs_for_different_nonexistent_files")
 {
 	const FilePath pathA(L"data/FilePathTestSuite/a.h");
 	const FilePath pathB(L"data/FilePathTestSuite/b.c");
@@ -203,10 +203,46 @@ TEST_CASE("file_path_differs_for_different_nonexisting_files")
 	REQUIRE(pathA != pathB);
 }
 
-TEST_CASE("file_path_differs_for_existing_and_nonexisting_files")
+TEST_CASE("file_path_differs_for_existing_and_nonexistent_files")
 {
 	const FilePath pathA(L"data/FilePathTestSuite/a.h");
 	const FilePath pathB(L"data/FilePathTestSuite/b.cc");
 
 	REQUIRE(pathA != pathB);
+}
+
+TEST_CASE("file path is valid for absolute and relative existing files and directories paths")
+{
+	REQUIRE(FilePath(L"data/FilePathTestSuite/a.cpp").isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/a.cpp").makeAbsolute().isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/with space/s.srctrlprj").isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/with space/s.srctrlprj").makeAbsolute().isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite").isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite").makeAbsolute().isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/container.app").isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/container.app").makeAbsolute().isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/container.app/b.txt").isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/container.app/b.txt").makeAbsolute().isValid());
+}
+
+TEST_CASE("file path is valid for absolute and relative non-existing files and directories paths")
+{
+	REQUIRE(FilePath(L"data/non-existing-file.cpp").isValid());
+	REQUIRE(FilePath(L"data/non-existing-file.cpp").makeAbsolute().isValid());
+	REQUIRE(FilePath(L"data/non-existing-dir").isValid());
+	REQUIRE(FilePath(L"data/non-existing-dir").makeAbsolute().isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/container.app/c.txt").isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/container.app/c.txt").makeAbsolute().isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/also space").isValid());
+	REQUIRE(FilePath(L"data/FilePathTestSuite/also space").makeAbsolute().isValid());
+}
+
+TEST_CASE("file path is invalid for absolute and relative paths with invalid characters")
+{
+	REQUIRE(!FilePath(L"data/non-exis\"ting-file.cpp").isValid());
+	REQUIRE(!FilePath(L"data/non-exis\"ting-file.cpp").makeAbsolute().isValid());
+	REQUIRE(!FilePath(L"data/non-exis|ting-dir").isValid());
+	REQUIRE(!FilePath(L"data/non-exis|ting-dir").makeAbsolute().isValid());
+	REQUIRE(!FilePath(L"data/FilePathTestSuite/container:app").isValid());
+	REQUIRE(!FilePath(L"data/FilePathTestSuite/container:app").makeAbsolute().isValid());
 }

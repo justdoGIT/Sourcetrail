@@ -12,7 +12,7 @@ QtProgressBar::QtProgressBar(QWidget* parent)
 	, m_percent(0)
 	, m_count(0)
 	, m_pixmap(QString::fromStdWString(
-		  ResourcePaths::getGuiPath().concatenate(L"indexing_dialog/progress_bar_element.png").wstr()))
+		  ResourcePaths::getGuiDirectoryPath().concatenate(L"indexing_dialog/progress_bar_element.png").wstr()))
 {
 	m_timer = new QTimer(this);
 	connect(m_timer, &QTimer::timeout, this, &QtProgressBar::animate);
@@ -56,7 +56,7 @@ void QtProgressBar::paintEvent(QPaintEvent* event)
 	}
 	else
 	{
-		painter.fillRect(0, 2, geometry().width() * m_percent / 100, 6, "white");
+		painter.fillRect(0, 2, static_cast<int>(geometry().width() * m_percent / 100), 6, "white");
 	}
 }
 

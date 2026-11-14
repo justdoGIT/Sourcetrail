@@ -9,19 +9,23 @@
 
 namespace utility
 {
-std::vector<std::string> getCxxHeaderPaths(const std::string& compilerName)
+std::vector<std::wstring> getCxxHeaderPaths(const std::string& compilerName)
 {
-	std::string command = compilerName + " -x c++ -v -E /dev/null";
-	std::string clangOutput = utility::executeProcess(command.c_str()).second;
-	std::string standardHeaders = utility::substrBetween<std::string>(
-		clangOutput, "#include <...> search starts here:\n", "\nEnd of search list");
-	std::vector<std::string> paths;
+	std::vector<std::wstring> paths;
 
-	if (!standardHeaders.empty())
+	const utility::ProcessOutput out = utility::executeProcess(
+		utility::decodeFromUtf8(compilerName), {L"-x", L"c++", L"-v", L"-E", L"/dev/null"});
+	if (out.exitCode == 0)
 	{
-		for (const std::string& s: utility::splitToVector(standardHeaders, '\n'))
+		std::wstring standardHeaders = utility::substrBetween<std::wstring>(
+			out.output, L"#include <...> search starts here:\n", L"\nEnd of search list");
+
+		if (!standardHeaders.empty())
 		{
-			paths.push_back(utility::trim(s));
+			for (const std::wstring& s: utility::splitToVector(standardHeaders, L'\n'))
+			{
+				paths.push_back(utility::trim(s));
+			}
 		}
 	}
 
@@ -49,7 +53,7 @@ std::vector<FilePath> getWindowsSdkHeaderSearchPaths(ApplicationArchitectureType
 			if (sdkIncludePath.exists())
 			{
 				bool usingSubdirectories = false;
-				for (const std::wstring subDirectory: {L"shared", L"um", L"winrt"})
+				for (const std::wstring& subDirectory: {L"shared", L"um", L"winrt"})
 				{
 					const FilePath sdkSubdirectory = sdkIncludePath.getConcatenated(subDirectory);
 					if (sdkSubdirectory.exists())
@@ -90,16 +94,16 @@ std::vector<FilePath> getWindowsSdkHeaderSearchPaths(ApplicationArchitectureType
 FilePath getWindowsSdkRootPathUsingRegistry(
 	ApplicationArchitectureType architectureType, const std::string& sdkVersion)
 {
-	QString key = "HKEY_LOCAL_MACHINE\\SOFTWARE\\";
+	QString key = QStringLiteral("HKEY_LOCAL_MACHINE\\SOFTWARE\\");
 	if (architectureType == APPLICATION_ARCHITECTURE_X86_32)
 	{
-		key += "Wow6432Node\\";
+		key += QStringLiteral("Wow6432Node\\");
 	}
-	key += ("Microsoft\\Microsoft SDKs\\Windows\\" + sdkVersion).c_str();
+	key += QStringLiteral("Microsoft\\Microsoft SDKs\\Windows\\") + sdkVersion.c_str();
 
 	QSettings expressKey(
 		key, QSettings::NativeFormat);	  // NativeFormat means from Registry on Windows.
-	QString value = expressKey.value("InstallationFolder").toString();
+	QString value = expressKey.value(QStringLiteral("InstallationFolder")).toString();
 
 	FilePath path(value.toStdWString());
 	if (path.exists())

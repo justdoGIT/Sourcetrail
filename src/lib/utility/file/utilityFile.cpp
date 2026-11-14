@@ -28,7 +28,7 @@ std::vector<FilePath> utility::partitionFilePathsBySize(std::vector<FilePath> fi
 		sourceFileSizesToCommands.end(),
 		[](const PairType& p, const PairType& q) { return p.first > q.first; });
 
-	if (0 < partitionCount && partitionCount < sourceFileSizesToCommands.size())
+	if (0 < partitionCount && partitionCount < static_cast<int>(sourceFileSizesToCommands.size()))
 	{
 		for (int i = 0; i < partitionCount; i++)
 		{
@@ -94,12 +94,12 @@ FilePath utility::getExpandedPath(const FilePath& path)
 
 std::vector<FilePath> utility::getExpandedPaths(const std::vector<FilePath>& paths)
 {
-	std::vector<FilePath> expanedPaths;
+	std::vector<FilePath> expandedPaths;
 	for (const FilePath& path: paths)
 	{
-		utility::append(expanedPaths, path.expandEnvironmentVariables());
+		utility::append(expandedPaths, path.expandEnvironmentVariables());
 	}
-	return expanedPaths;
+	return expandedPaths;
 }
 
 FilePath utility::getExpandedAndAbsolutePath(const FilePath& path, const FilePath& baseDirectory)

@@ -14,10 +14,10 @@ QtPathListBoxItem::QtPathListBoxItem(QtPathListBox* listBox, QListWidgetItem* it
 	: QtListBoxItem(item, parent), m_listBox(listBox)
 {
 	m_button = new QtIconButton(
-		ResourcePaths::getGuiPath().concatenate(L"window/dots.png"),
-		ResourcePaths::getGuiPath().concatenate(L"window/dots_hover.png"));
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"window/dots.png"),
+		ResourcePaths::getGuiDirectoryPath().concatenate(L"window/dots_hover.png"));
 	m_button->setIconSize(QSize(16, 16));
-	m_button->setObjectName("dotsButton");
+	m_button->setObjectName(QStringLiteral("dotsButton"));
 	layout()->addWidget(m_button);
 
 	connect(m_button, &QPushButton::clicked, this, &QtPathListBoxItem::handleButtonPress);
@@ -37,10 +37,12 @@ void QtPathListBoxItem::handleButtonPress()
 	switch (m_listBox->getSelectionPolicy())
 	{
 	case QtPathListBox::SELECTION_POLICY_FILES_ONLY:
-		list.append(QtFileDialog::getOpenFileName(this, "Select Directory", path, ""));
+		list.append(QtFileDialog::getOpenFileName(
+			this, QStringLiteral("Select Directory"), path, QLatin1String("")));
 		break;
 	case QtPathListBox::SELECTION_POLICY_DIRECTORIES_ONLY:
-		list.append(QtFileDialog::getExistingDirectory(this, "Select Directory", path));
+		list.append(
+			QtFileDialog::getExistingDirectory(this, QStringLiteral("Select Directory"), path));
 		break;
 	case QtPathListBox::SELECTION_POLICY_FILES_AND_DIRECTORIES:
 		list = QtFileDialog::getFileNamesAndDirectories(this, path);

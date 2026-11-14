@@ -22,7 +22,8 @@ QSize QtAbout::sizeHint() const
 void QtAbout::setupAbout()
 {
 	setStyleSheet(
-		utility::getStyleSheet(ResourcePaths::getGuiPath().concatenate(L"about/about.css")).c_str());
+		utility::getStyleSheet(ResourcePaths::getGuiDirectoryPath().concatenate(L"about/about.css"))
+			.c_str());
 
 	QVBoxLayout* windowLayout = new QVBoxLayout();
 	windowLayout->setContentsMargins(10, 10, 10, 0);
@@ -31,11 +32,12 @@ void QtAbout::setupAbout()
 
 	{
 		QtDeviceScaledPixmap sourcetrailLogo(QString::fromStdWString(
-			ResourcePaths::getGuiPath().wstr() + L"about/logo_sourcetrail.png"));
+			ResourcePaths::getGuiDirectoryPath().wstr() + L"about/logo_sourcetrail.png"));
 		sourcetrailLogo.scaleToHeight(150);
 		QLabel* sourcetrailLogoLabel = new QLabel(this);
 		sourcetrailLogoLabel->setPixmap(sourcetrailLogo.pixmap());
-		sourcetrailLogoLabel->resize(sourcetrailLogo.width(), sourcetrailLogo.height());
+		sourcetrailLogoLabel->resize(
+			static_cast<int>(sourcetrailLogo.width()), static_cast<int>(sourcetrailLogo.height()));
 		windowLayout->addWidget(
 			sourcetrailLogoLabel, 0, Qt::Alignment(Qt::AlignmentFlag::AlignHCenter));
 	}
@@ -67,46 +69,53 @@ void QtAbout::setupAbout()
 		QHBoxLayout* layoutHorz1 = new QHBoxLayout();
 		windowLayout->addLayout(layoutHorz1);
 
-		QLabel* companyLabel = new QLabel(
-			"<b>Coati Software KG</b><br />"
-			"Jakob-Haringer-Straße 1/127<br />"
-			"5020 Salzburg<br />"
-			"Austria<br />"
-			"<b>support@sourcetrail.com</b><br />"
-			"<b><a href=\"https://sourcetrail.com\" style=\"color: "
-			"white;\">sourcetrail.com</a></b>");
-		companyLabel->setOpenExternalLinks(true);
-		layoutHorz1->addWidget(companyLabel);
-
-		layoutHorz1->addSpacing(120);
+		layoutHorz1->addStretch();
 
 		QLabel* developerLabel = new QLabel(
-			"<br /><br />"
-			"<b>Team:</b><br />"
-			"Manuel Dobusch<br />"
-			"Eberhard Gräther<br />"
-			"Malte Langkabel<br />"
-			"Viktoria Pfausler<br />"
-			"Andreas Stallinger<br />");
-		developerLabel->setObjectName("small");
+			QString::fromStdString("<br /><br />"
+								   "<b>Team:</b><br />"
+								   "Manuel Dobusch<br />"
+								   "Eberhard Gräther<br />"
+								   "Malte Langkabel<br />"
+								   "Viktoria Pfausler<br />"
+								   "Andreas Stallinger<br />"));
+		developerLabel->setObjectName(QStringLiteral("small"));
 		layoutHorz1->addWidget(developerLabel);
+
+		layoutHorz1->addStretch();
 	}
 
 	windowLayout->addStretch();
 
-	QLabel* acknowledgementsLabel = new QLabel(
-		"<b>Acknowledgements:</b><br />"
-		"Sourcetrail (aka Coati) 0.1 was created in the context of education at "
-		"<a href=\"http://www.fh-salzburg.ac.at/en/\" style=\"color: white;\">Salzburg University "
-		"of Applied Sciences</a>.<br />"
-		"Coati Software KG is member of <a href=\"http://www.startup-salzburg.at/\" style=\"color: "
-		"white;\">Startup Salzburg</a>.<br />"
-		"The development of Sourcetrail was funded by <a href=\"http://awsg.at\" style=\"color: "
-		"white;\">aws</a>.");
-	acknowledgementsLabel->setObjectName("small");
-	acknowledgementsLabel->setWordWrap(true);
-	acknowledgementsLabel->setOpenExternalLinks(true);
-	windowLayout->addWidget(acknowledgementsLabel);
+	{
+		QLabel* acknowledgementsLabel = new QLabel(QString::fromStdString(
+			"<b>Acknowledgements:</b><br />"
+			"Sourcetrail (aka Coati) 0.1 was created in the context of education at "
+			"<a href=\"http://www.fh-salzburg.ac.at/en/\" style=\"color: white;\">Salzburg "
+			"University "
+			"of Applied Sciences</a>.<br />"
+			"Coati Software KG is member of <a href=\"http://www.startup-salzburg.at/\" "
+			"style=\"color: "
+			"white;\">Startup Salzburg</a>.<br />"
+			"The development of Sourcetrail was funded by <a href=\"http://awsg.at\" "
+			"style=\"color: "
+			"white;\">aws</a>."));
+		acknowledgementsLabel->setObjectName(QStringLiteral("small"));
+		acknowledgementsLabel->setWordWrap(true);
+		acknowledgementsLabel->setOpenExternalLinks(true);
+		windowLayout->addWidget(acknowledgementsLabel);
+		windowLayout->addSpacing(10);
+	}
 
-	windowLayout->addSpacing(10);
+	{
+		QLabel* webLabel = new QLabel(
+			"<b>Repository: <a href=\"https://github.com/CoatiSoftware/Sourcetrail\" "
+			"style=\"color: "
+			"white;\">github.com/CoatiSoftware/Sourcetrail</a></b>",
+			this);
+		webLabel->setObjectName(QStringLiteral("small"));
+		webLabel->setOpenExternalLinks(true);
+		windowLayout->addWidget(webLabel);
+		windowLayout->addSpacing(10);
+	}
 }

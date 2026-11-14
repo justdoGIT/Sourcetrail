@@ -21,6 +21,8 @@ add_files(
 	qt/element/button/QtSelfRefreshIconButton.cpp
 	qt/element/button/QtSelfRefreshIconButton.h
 
+	qt/element/code/CodeFocusHandler.cpp
+	qt/element/code/CodeFocusHandler.h
 	qt/element/code/QtCodeArea.cpp
 	qt/element/code/QtCodeArea.h
 	qt/element/code/QtCodeField.cpp
@@ -35,8 +37,8 @@ add_files(
 	qt/element/code/QtCodeFileTitleBar.h
 	qt/element/code/QtCodeFileTitleButton.cpp
 	qt/element/code/QtCodeFileTitleButton.h
-	qt/element/code/QtCodeNavigateable.cpp
-	qt/element/code/QtCodeNavigateable.h
+	qt/element/code/QtCodeNavigable.cpp
+	qt/element/code/QtCodeNavigable.h
 	qt/element/code/QtCodeNavigator.cpp
 	qt/element/code/QtCodeNavigator.h
 	qt/element/code/QtCodeSnippet.cpp
@@ -66,8 +68,6 @@ add_files(
 	qt/element/dialog/QtListBoxItem.h
 	qt/element/dialog/QtLocationPicker.cpp
 	qt/element/dialog/QtLocationPicker.h
-	qt/element/dialog/QtNewsWidget.cpp
-	qt/element/dialog/QtNewsWidget.h
 	qt/element/dialog/QtPathListBox.cpp
 	qt/element/dialog/QtPathListBox.h
 	qt/element/dialog/QtPathListBoxItem.cpp
@@ -80,8 +80,6 @@ add_files(
 	qt/element/dialog/QtStringListBoxItem.h
 	qt/element/dialog/QtTextEdit.cpp
 	qt/element/dialog/QtTextEdit.h
-	qt/element/dialog/QtUpdateCheckerWidget.cpp
-	qt/element/dialog/QtUpdateCheckerWidget.h
 
 	qt/element/QtTooltip.cpp
 	qt/element/QtTooltip.h
@@ -94,8 +92,6 @@ add_files(
 
 	qt/graphics/base/QtCountCircleItem.cpp
 	qt/graphics/base/QtCountCircleItem.h
-	qt/graphics/base/QtGraphicsView.cpp
-	qt/graphics/base/QtGraphicsView.h
 	qt/graphics/base/QtLineItemAngled.cpp
 	qt/graphics/base/QtLineItemAngled.h
 	qt/graphics/base/QtLineItemBase.cpp
@@ -133,6 +129,11 @@ add_files(
 	qt/graphics/graph/QtGraphNodeText.cpp
 	qt/graphics/graph/QtGraphNodeText.h
 
+	qt/graphics/GraphFocusHandler.cpp
+	qt/graphics/GraphFocusHandler.h
+	qt/graphics/QtGraphicsView.cpp
+	qt/graphics/QtGraphicsView.h
+
 	qt/network/QtIDECommunicationController.cpp
 	qt/network/QtIDECommunicationController.h
 	qt/network/QtNetworkFactory.cpp
@@ -141,8 +142,6 @@ add_files(
 	qt/network/QtRequest.h
 	qt/network/QtTcpWrapper.cpp
 	qt/network/QtTcpWrapper.h
-	qt/network/QtUpdateChecker.cpp
-	qt/network/QtUpdateChecker.h
 
 	qt/project_wizard/content/path/QtProjectWizardContentPath.cpp
 	qt/project_wizard/content/path/QtProjectWizardContentPath.h
@@ -166,6 +165,7 @@ add_files(
 	qt/project_wizard/content/QtProjectWizardContentPreferences.h
 	qt/project_wizard/content/QtProjectWizardContentProjectData.cpp
 	qt/project_wizard/content/QtProjectWizardContentProjectData.h
+	qt/project_wizard/content/QtProjectWizardContentRequiredLabel.h
 	qt/project_wizard/content/QtProjectWizardContentSelect.cpp
 	qt/project_wizard/content/QtProjectWizardContentSelect.h
 	qt/project_wizard/content/QtProjectWizardContentSourceGroupData.cpp
@@ -179,9 +179,9 @@ add_files(
 	qt/project_wizard/QtProjectWizard.h
 	qt/project_wizard/QtProjectWizardWindow.cpp
 	qt/project_wizard/QtProjectWizardWindow.h
-	qt/project_wizard/QtSourceGroupWizard.h
-	qt/project_wizard/QtSourceGroupWizardPage.h
 
+	qt/utility/compatibilityQt.cpp
+	qt/utility/compatibilityQt.h
 	qt/utility/QtContextMenu.cpp
 	qt/utility/QtContextMenu.h
 	qt/utility/QtDeviceScaledPixmap.cpp
@@ -192,6 +192,8 @@ add_files(
 	qt/utility/QtFilesAndDirectoriesDialog.h
 	qt/utility/QtFlowLayout.cpp
 	qt/utility/QtFlowLayout.h
+	qt/utility/QtHelpButtonInfo.cpp
+	qt/utility/QtHelpButtonInfo.h
 	qt/utility/QtHighlighter.cpp
 	qt/utility/QtHighlighter.h
 	qt/utility/QtScrollSpeedChangeListener.cpp
@@ -356,6 +358,8 @@ if (BUILD_JAVA_LANGUAGE_PACKAGE)
 	add_files(
 		LIB_GUI
 
+		qt/project_wizard/content/path/QtProjectWizardContentPathSettingsMaven.cpp
+		qt/project_wizard/content/path/QtProjectWizardContentPathSettingsMaven.h
 		qt/project_wizard/content/path/QtProjectWizardContentPathSourceGradle.cpp
 		qt/project_wizard/content/path/QtProjectWizardContentPathSourceGradle.h
 		qt/project_wizard/content/path/QtProjectWizardContentPathSourceMaven.cpp

@@ -80,7 +80,7 @@ bool FilePath::empty() const
 	return m_path->empty();
 }
 
-bool FilePath::exists() const
+bool FilePath::exists() const noexcept
 {
 	if (!m_checkedExists)
 	{
@@ -111,6 +111,32 @@ bool FilePath::isDirectory() const
 bool FilePath::isAbsolute() const
 {
 	return m_path->is_absolute();
+}
+
+bool FilePath::isValid() const
+{
+	boost::filesystem::path::iterator it = m_path->begin();
+
+	if (isAbsolute() && m_path->has_root_path())
+	{
+		std::string root = m_path->root_path().string();
+		std::string current = "";
+		while (current.size() < root.size())
+		{
+			current += it->string();
+			it++;
+		}
+	}
+
+	for (; it != m_path->end(); ++it)
+	{
+		if (!boost::filesystem::windows_name(it->string()))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 FilePath FilePath::getParentDirectory() const
@@ -182,9 +208,10 @@ FilePath& FilePath::makeCanonical()
 				boost::filesystem::path symlink = boost::filesystem::read_symlink(canonicalPath);
 				if (!symlink.empty())
 				{
-					// on Windows the read_symlink function discards the drive letter (this is a boost
-					// bug). Therefore we need to make the path absolute again. We also have to discard
-					// the trailing \0 characters so that we can continue appending to the path.
+					// on Windows the read_symlink function discards the drive letter (this is a
+					// boost bug). Therefore we need to make the path absolute again. We also have
+					// to discard the trailing \0 characters so that we can continue appending to
+					// the path.
 					canonicalPath = utility::substrBeforeFirst(
 						boost::filesystem::absolute(symlink).string(), '\0');
 				}
@@ -223,8 +250,11 @@ std::vector<FilePath> FilePath::expandEnvironmentVariables() const
 	std::smatch match;
 	while (std::regex_search(text, match, env))
 	{
+#pragma warning(push)
+#pragma warning(disable : 4996)
 		const char* s = match[1].matched ? getenv(match[1].str().c_str())
 										 : getenv(match[2].str().c_str());
+#pragma warning(pop)
 		if (s == nullptr)
 		{
 			LOG_ERROR_STREAM(<< match[1].str() << " is not an environment variable in: " << text);
@@ -394,16 +424,6 @@ std::string FilePath::str() const
 std::wstring FilePath::wstr() const
 {
 	return m_path->generic_wstring();
-}
-
-std::string FilePath::getBackslashedString() const
-{
-	return utility::replace(str(), "/", "\\");
-}
-
-std::wstring FilePath::getBackslashedWString() const
-{
-	return utility::replace(wstr(), L"/", L"\\");
 }
 
 std::wstring FilePath::fileName() const

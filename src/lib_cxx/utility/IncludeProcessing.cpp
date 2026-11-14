@@ -34,7 +34,7 @@ std::vector<IncludeDirective> IncludeProcessing::getUnresolvedIncludeDirectives(
 	std::unordered_set<std::wstring> processedFilePaths;
 	std::set<IncludeDirective, IncludeDirectiveComparator> unresolvedIncludeDirectives;
 
-	std::vector<std::vector<FilePath>> parts = utility::splitToEqualySizedParts(
+	std::vector<std::vector<FilePath>> parts = utility::splitToEquallySizedParts(
 		utility::toVector(sourceFilePaths), desiredQuantileCount);
 
 	for (size_t i = 0; i < parts.size(); i++)
@@ -78,7 +78,7 @@ std::set<FilePath> IncludeProcessing::getHeaderSearchDirectories(
 
 	std::set<FilePath> headerSearchDirectories;
 	std::unordered_set<std::wstring> processedFilePaths;
-	std::vector<std::vector<FilePath>> parts = utility::splitToEqualySizedParts(
+	std::vector<std::vector<FilePath>> parts = utility::splitToEquallySizedParts(
 		utility::toVector(sourceFilePaths), desiredQuantileCount);
 
 	for (size_t i = 0; i < parts.size(); i++)
@@ -162,7 +162,7 @@ std::vector<IncludeDirective> IncludeProcessing::getIncludeDirectives(
 
 	TextCodec codec(ApplicationSettings::getInstance()->getTextEncoding());
 	const std::vector<std::string> lines = textAccess->getAllLines();
-	for (size_t i = 0; i < lines.size(); i++)
+	for (unsigned i = 0; i < lines.size(); i++)
 	{
 		const std::wstring line = codec.decode(lines[i]);
 		const std::wstring lineTrimmedToHash = utility::trim(line);

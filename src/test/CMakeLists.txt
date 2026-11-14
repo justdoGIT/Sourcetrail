@@ -3,7 +3,7 @@ add_files(
 
 	helper/TestFileRegister.cpp
 	helper/TestFileRegister.h
-	helper/TestIntermediateStorage.h
+	helper/TestStorage.h
 
 	test_main.cpp
 
@@ -17,6 +17,7 @@ add_files(
 	FilePathTestSuite.cpp
 	FileSystemTestSuite.cpp
 	GraphTestSuite.cpp
+	HierarchyCacheTestSuite.cpp
 	JavaIndexSampleProjectsTestSuite.cpp
 	JavaParserTestSuite.cpp
 	LogManagerTestSuite.cpp
@@ -25,6 +26,7 @@ add_files(
 	MatrixDynamicBaseTestSuite.cpp
 	MessageQueueTestSuite.cpp
 	NetworkProtocolHelperTestSuite.cpp
+	PythonIndexerTestSuite.cpp
 	RefreshInfoGeneratorTestSuite.cpp
 	SearchIndexTestSuite.cpp
 	SettingsMigratorTestSuite.cpp
@@ -37,6 +39,7 @@ add_files(
 	StorageTestSuite.cpp
 	TaskSchedulerTestSuite.cpp
 	TextAccessTestSuite.cpp
+	UtilityGradleTestSuite.cpp
 	UtilityMavenTestSuite.cpp
 	UtilityStringTestSuite.cpp
 	UtilityTestSuite.cpp

@@ -22,7 +22,7 @@ public:
 
 	bool operator==(const ApplicationSettings& other) const;
 
-	int getMaxRecentProjectsCount() const;
+	size_t getMaxRecentProjectsCount() const;
 
 	// application
 	std::string getFontName() const;
@@ -81,6 +81,9 @@ public:
 
 	bool getVerboseIndexerLoggingEnabled() const;
 	void setVerboseIndexerLoggingEnabled(bool loggingEnabled);
+
+	FilePath getLogDirectoryPath() const;
+	void setLogDirectoryPath(const FilePath& path);
 
 	int getLogFilter() const;
 	void setLogFilter(int mask);
@@ -151,29 +154,14 @@ public:
 	std::vector<FilePath> getRecentProjects() const;
 	bool setRecentProjects(const std::vector<FilePath>& recentProjects);
 
-	std::string getUserToken() const;
-	void setUserToken(std::string token);
-
-	bool getAutomaticUpdateCheck() const;
-	void setAutomaticUpdateCheck(bool automaticUpdates);
-
-	TimeStamp getLastUpdateCheck() const;
-	void setLastUpdateCheck(const TimeStamp& time);
-
-	Version getSkipUpdateForVersion() const;
-	void setSkipUpdateForVersion(const Version& version);
-
-	std::string getUpdateDownloadUrl() const;
-	void setUpdateDownloadUrl(const std::string& url);
-
-	Version getUpdateVersion() const;
-	void setUpdateVersion(const Version& version);
-
-	std::string getUpdateNews() const;
-	void setUpdateNews(const std::string& news);
-
 	bool getSeenErrorHelpMessage() const;
 	void setSeenErrorHelpMessage(bool seen);
+
+	FilePath getLastFilepickerLocation() const;
+	void setLastFilepickerLocation(const FilePath& path);
+
+	float getGraphZoomLevel() const;
+	void setGraphZoomLevel(float zoomLevel);
 
 	// network
 	int getPluginPort() const;

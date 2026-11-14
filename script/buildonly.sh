@@ -13,12 +13,12 @@ then
 
 	mkdir -p build/Debug
 	cd build/Debug
-	cmake -G Ninja -DCMAKE_BUILD_TYPE="Debug" ../..
+	cmake -G Ninja -DCMAKE_BUILD_TYPE="Debug" -DBUILD_CXX_LANGUAGE_PACKAGE=ON -DBUILD_JAVA_LANGUAGE_PACKAGE=ON -DBUILD_PYTHON_LANGUAGE_PACKAGE=ON -DDOCKER_BUILD=ON ../..
 	cd ../..
 
 	mkdir -p build/Release
 	cd build/Release
-	cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" ../..
+	cmake -G Ninja -DCMAKE_BUILD_TYPE="Release" -DBUILD_CXX_LANGUAGE_PACKAGE=ON -DBUILD_JAVA_LANGUAGE_PACKAGE=ON -DBUILD_PYTHON_LANGUAGE_PACKAGE=ON -DDOCKER_BUILD=ON ../..
 	cd ../..
 
 	if [ $? -ne 0 ]
@@ -51,11 +51,6 @@ then
 		#echo "debug app"
 		cmake --build build/Debug --target Sourcetrail
 	fi
-elif [ "$1" = "package" ] || [ "$1" = "p" ]
-then
-		cmake --build build/Release --target package
-		mv build/Release/Sourcetrail*.tar.gz . #&& cp build/Release/Sourcetrail*.deb distr
-		echo "Packages copied into the root folder"
 elif [ "$1" = "all" ] || [ "$1" = "a" ]
 then
 	cmake --build build/Release --target all
